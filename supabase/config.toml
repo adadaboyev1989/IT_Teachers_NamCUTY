@@ -1,5 +1,0 @@
-[functions.telegram-bot]
-verify_jwt = false
-
-[functions.miniapp-data]
-verify_jwt = false
