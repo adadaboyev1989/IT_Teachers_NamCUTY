@@ -5,3 +5,4 @@ dist/
 *.local
 tsconfig.tsbuildinfo
 .DS_Store
+local-server/data/

@@ -37,6 +37,25 @@ npm run build     # production build (dist/)
 npm run preview   # build natijasini lokal ko'rish
 ```
 
+## Lokal ishlab chiqish (Supabase'siz, SQLite bilan)
+
+Supabase'ga ulanmasdan (internetsiz yoki hisobingiz bo'lmasa ham) saytni to'liq lokalda sinash uchun `local-server/` — SQLite'ga asoslangan, Supabase'ning REST (`PostgREST`) va Auth (`GoTrue`) protokolining shu loyiha ishlatadigan qismini takrorlaydigan kichik server mavjud. Frontend kodi **o'zgarmaydi** — u hamon `@supabase/supabase-js` orqali gapiradi, faqat qaysi URL'ga ulanishini almashtiramiz.
+
+```bash
+cp .env.local.example .env.local   # VITE_SUPABASE_URL'ni lokal serverga ko'rsatadi
+npm run db:migrate                  # SQLite faylini yaratadi (local-server/data/local.db)
+npm run dev:local                   # lokal API (54321-port) + Vite'ni birga ishga tushiradi
+```
+
+Admin panelga kirish uchun standart login: `admin@it-teachers.uz` / `localdev123` (`.env.local`da `LOCAL_ADMIN_EMAIL`/`LOCAL_ADMIN_PASSWORD` bilan o'zgartirish mumkin).
+
+**Muhim cheklovlar:**
+- Faqat `teachers`, `resources`, `events`, `pedagog_data` jadvallari qamrab olingan — bular admin panel va ochiq sayt ishlatadigan jadvallar. `bot_users`/`bot_messages` va Telegram bot/Mini App bu yerga kirmaydi (ular hamon Supabase Edge Functions + haqiqiy Telegram serverini talab qiladi, lokalda emulyatsiya qilinmaydi).
+- Bu — **faqat lokal test uchun** soddalashtirilgan shim: haqiqiy autentifikatsiya, RLS yoki shifrlash yo'q. Hech qachon tashqi tarmoqqa ochiq qoldirmang (`127.0.0.1`dan boshqa joyga bog'lanmaydi).
+- Sxema `local-server/db/schema.ts`da Postgres migratsiyalari bilan bir xil ustun nomlari bilan yozilgan — Postgres'ga o'tganda faqat `drizzle.config.ts`dagi `dialect`ni `"postgresql"`ga almashtirib, haqiqiy `supabase/migrations/*.sql` fayllaridan foydalanish kifoya (batafsili `local-server/db/schema.ts` boshidagi izohda).
+
+Production'da hech narsa o'zgarmaydi — `.env` (Supabase) ishlatilganda hammasi avvalgidek ishlaydi; `.env.local` faqat lokal SQLite rejimini yoqadi.
+
 ## Supabase sozlamalari
 
 ### Migratsiyalar
@@ -93,6 +112,8 @@ supabase/
 public/
   miniapp.html  — Mini App'ning statik nusxasi (miniapp-data funksiyasidagi generatsiya qilingan
                   HTML bilan qo'lda sinxronlanadi — ikkalasida ham bir xil o'zgarish kiritilishi kerak)
+local-server/   — faqat lokal ishlab chiqish uchun SQLite + Supabase REST/Auth shim
+                  (yuqoridagi "Lokal ishlab chiqish" bo'limiga qarang)
 ```
 
 ## Xavfsizlik bo'yicha ma'lum cheklovlar
