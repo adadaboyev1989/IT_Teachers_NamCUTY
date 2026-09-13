@@ -14,8 +14,23 @@ Namangan shahridagi IT/informatika o'qituvchilari uchun jamoat platformasi: o'qi
 - **Frontend:** React 18 + TypeScript + Vite, Tailwind CSS, `lucide-react`, `xlsx` (Excel import/eksport)
 - **Backend:** Supabase (Postgres + Row Level Security, Auth, Storage, Edge Functions)
 - **Bot/Mini App:** Supabase Edge Functions (Deno) — Telegram Bot API bilan to'g'ridan-to'g'ri ishlaydi
+- **Lokal ishlab chiqish:** SQLite + Drizzle ORM asosidagi mustaqil shim (Supabase kerak emas — pastga qarang)
 
-## Loyihani ishga tushirish
+## Loyiha tuzilishi
+
+```
+src/
+  admin/          — admin panel sahifalari (O'qituvchilar, Resurslar, Tadbirlar, Bot > Pedagog/Reyting)
+  components/     — ochiq sayt komponentlari (Navbar, Hero, Teachers/Resources/Events View va formalar)
+  lib/            — Supabase client va reyting hisoblash formulasi
+supabase/
+  functions/      — telegram-bot va miniapp-data Edge Functions (Deno)
+  migrations/     — Postgres jadvallar, RLS siyosatlari, validatsiya cheklovlari
+local-server/     — faqat lokal ishlab chiqish uchun SQLite + Supabase REST/Auth shim
+public/           — statik fayllar (favicon)
+```
+
+## O'rnatish
 
 ```bash
 npm install
@@ -56,7 +71,7 @@ Admin panelga kirish uchun standart login: `admin@it-teachers.uz` / `localdev123
 
 Production'da hech narsa o'zgarmaydi — `.env` (Supabase) ishlatilganda hammasi avvalgidek ishlaydi; `.env.local` faqat lokal SQLite rejimini yoqadi.
 
-## Supabase sozlamalari
+## Supabase sozlamalari (production)
 
 ### Migratsiyalar
 
@@ -93,28 +108,13 @@ Boshqa foydali sozlash/diagnostika parametrlari (barchasi `?secret=<TELEGRAM_WEB
 | `getMe=true` | Bot ma'lumotlarini ko'rsatadi |
 | `testMessage=true` | Adminga test xabar yuboradi |
 
+**Mini App sahifasi** faqat bitta joyda — `supabase/functions/miniapp-data/index.ts` ichida — generatsiya qilinadi va Supabase Storage'ga yuklanadi (`?uploadHtml=true`). Agar `MINIAPP_URL` sozlangan bo'lmasa, bot avtomatik shu Storage manzilidan foydalanadi.
+
 ## Admin kirish
 
 Admin panelga kirish uchun Supabase Auth orqali foydalanuvchi (email/parol) yaratilgan bo'lishi kerak — **Authentication → Users** bo'limida qo'lda qo'shing. Loyihada ro'yxatdan o'tish (sign-up) formasi yo'q, faqat kirish (`AdminLogin`) mavjud.
 
 > Eslatma: `teachers`/`resources`/`events`/`pedagog_data` jadvallarida tahrirlash/o'chirish huquqi har qanday `authenticated` foydalanuvchiga berilgan (alohida "admin" roli yo'q). Shu sababli Supabase loyihangizda **ochiq ro'yxatdan o'tish (public sign-up) o'chirilganligini** tekshirib qo'ying, aks holda har qanday ro'yxatdan o'tgan foydalanuvchi admin bilan bab-baravar huquqqa ega bo'ladi.
-
-## Loyiha tuzilishi
-
-```
-src/
-  admin/        — admin panel sahifalari (O'qituvchilar, Resurslar, Tadbirlar, Bot > Pedagog/Reyting)
-  components/   — ochiq sayt komponentlari (Navbar, Hero, Teachers/Resources/Events View va formalar)
-  lib/          — Supabase client va reyting hisoblash formulasi
-supabase/
-  functions/    — telegram-bot va miniapp-data Edge Functions (Deno)
-  migrations/   — Postgres jadvallar, RLS siyosatlari, validatsiya cheklovlari
-public/
-  miniapp.html  — Mini App'ning statik nusxasi (miniapp-data funksiyasidagi generatsiya qilingan
-                  HTML bilan qo'lda sinxronlanadi — ikkalasida ham bir xil o'zgarish kiritilishi kerak)
-local-server/   — faqat lokal ishlab chiqish uchun SQLite + Supabase REST/Auth shim
-                  (yuqoridagi "Lokal ishlab chiqish" bo'limiga qarang)
-```
 
 ## Xavfsizlik bo'yicha ma'lum cheklovlar
 

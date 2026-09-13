@@ -1,3 +1,0 @@
-/miniapp.html
-  Content-Type: text/html; charset=utf-8
-  Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://api.telegram.org; sandbox allow-scripts allow-same-origin allow-forms allow-popups

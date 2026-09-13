@@ -82,11 +82,14 @@ const STORAGE_BUCKET = "miniapp";
 const STORAGE_PATH = "index.html";
 const STORAGE_PUBLIC_URL = `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${STORAGE_PATH}`;
 
-// NOTE: public/miniapp.html (served from the site's own hosting) is a
-// near-identical copy of this generated page — there's no shared build step
-// between the Vite frontend and these Deno edge functions to de-duplicate
-// them across runtimes, so any change to the markup/JS below (especially the
-// initData auth flow) must be mirrored there too.
+// This is the single source of truth for the Mini App page — it's uploaded
+// to Supabase Storage (see uploadHtmlToStorage below) and also served
+// directly from this function. An older revision kept a second,
+// near-identical copy as a static public/miniapp.html file on the site's own
+// hosting; that duplicate was removed since it required every change here
+// (especially the initData auth flow) to be mirrored there by hand. If
+// MINIAPP_URL currently points at that old site-hosted path, update the
+// secret to point here or at STORAGE_PUBLIC_URL instead.
 function buildMiniAppHtml(): string {
   return `<!DOCTYPE html>
 <html lang="uz">
