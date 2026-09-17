@@ -1,0 +1,8 @@
+[functions.telegram-bot]
+verify_jwt = false
+
+[functions.miniapp-api]
+verify_jwt = false
+
+[functions.notify-task]
+verify_jwt = true
