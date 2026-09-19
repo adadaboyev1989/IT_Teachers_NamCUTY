@@ -82,4 +82,17 @@ export type TaskCompletion = {
   completed_at: string | null
 }
 
-export type AdminTabId = 'pedagog' | 'quest' | 'battle' | 'rating' | 'tasks'
+export type BotUser = {
+  telegram_id: number
+  telegram_username: string | null
+  telegram_first_name: string | null
+  telegram_last_name: string | null
+  phone_number: string | null
+  pedagog_data_id: string | null
+  is_registered: boolean
+  state: string
+  created_at: string
+  last_seen_at: string | null
+}
+
+export type AdminTabId = 'pedagog' | 'quest' | 'battle' | 'rating' | 'tasks' | 'bot-status'

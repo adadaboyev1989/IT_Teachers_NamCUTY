@@ -41,15 +41,33 @@ type BotUser = {
   pedagog_data_id: string | null;
   is_registered: boolean;
   state: string;
+  last_seen_at: string | null;
 };
 
+// Touches last_seen_at (and refreshes the cached Telegram name/username) on
+// every single call, so it doubles as "record this interaction" — the admin
+// panel's Bot holati tab relies on last_seen_at actually moving on ordinary
+// messages, not just registration-flow steps like updateUser's callers do.
 async function getOrCreateUser(from: { id: number; first_name?: string; last_name?: string; username?: string }): Promise<BotUser | null> {
-  const { data, error } = await supabase.from("bot_users").select("*").eq("telegram_id", from.id).maybeSingle();
-  if (error) {
-    console.error("getOrCreateUser select failed:", error.message);
+  const now = new Date().toISOString();
+
+  const { data: updated, error: updateError } = await supabase
+    .from("bot_users")
+    .update({
+      last_seen_at: now,
+      telegram_username: from.username || null,
+      telegram_first_name: from.first_name || null,
+      telegram_last_name: from.last_name || null,
+    })
+    .eq("telegram_id", from.id)
+    .select("*")
+    .maybeSingle();
+
+  if (updateError) {
+    console.error("getOrCreateUser update failed:", updateError.message);
     return null;
   }
-  if (data) return data;
+  if (updated) return updated;
 
   const { data: created, error: insertError } = await supabase
     .from("bot_users")
@@ -59,6 +77,7 @@ async function getOrCreateUser(from: { id: number; first_name?: string; last_nam
       telegram_last_name: from.last_name || null,
       telegram_username: from.username || null,
       state: "new",
+      last_seen_at: now,
     })
     .select("*")
     .single();
