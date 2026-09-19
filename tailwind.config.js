@@ -53,10 +53,40 @@ export default {
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
+        'pop-in': 'popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+        'float-up-fade': 'floatUpFade 1.3s ease-out forwards',
+        'unlock-shake': 'unlockShake 0.6s ease-in-out 0.1s both',
+        'confetti-pop': 'confettiPop 1s ease-out both',
       },
       keyframes: {
         fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
         scaleIn: { from: { opacity: 0, transform: 'scale(0.96)' }, to: { opacity: 1, transform: 'scale(1)' } },
+        popIn: {
+          '0%': { opacity: 0, transform: 'scale(0.3)' },
+          '60%': { opacity: 1, transform: 'scale(1.15)' },
+          '100%': { opacity: 1, transform: 'scale(1)' },
+        },
+        floatUpFade: {
+          '0%': { opacity: 0, transform: 'translateY(0) scale(0.85)' },
+          '15%': { opacity: 1, transform: 'translateY(-2px) scale(1.05)' },
+          '80%': { opacity: 1, transform: 'translateY(-30px) scale(1)' },
+          '100%': { opacity: 0, transform: 'translateY(-46px) scale(0.95)' },
+        },
+        unlockShake: {
+          '0%, 100%': { transform: 'rotate(0deg)' },
+          '20%': { transform: 'rotate(-14deg)' },
+          '40%': { transform: 'rotate(11deg)' },
+          '60%': { transform: 'rotate(-7deg)' },
+          '80%': { transform: 'rotate(4deg)' },
+        },
+        confettiPop: {
+          '0%': { opacity: 0, transform: 'translate(-50%, -50%) scale(0) rotate(0deg)' },
+          '25%': { opacity: 1, transform: 'translate(-50%, -50%) scale(1) rotate(60deg)' },
+          '100%': {
+            opacity: 0,
+            transform: 'translate(calc(-50% + var(--confetti-x)), calc(-50% + var(--confetti-y))) scale(0.8) rotate(220deg)',
+          },
+        },
       },
     },
   },
