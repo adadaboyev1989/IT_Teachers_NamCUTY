@@ -8,6 +8,7 @@ import { AdminBattle } from './AdminBattle'
 import { AdminRatingSettings } from './AdminRatingSettings'
 import { AdminTasks } from './AdminTasks'
 import { AdminBotStatus } from './AdminBotStatus'
+import { ThemeToggle } from './ThemeToggle'
 
 type Props = { onLogout: () => void }
 
@@ -30,7 +31,7 @@ export function AdminLayout({ onLogout }: Props) {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      <header className="sticky top-0 z-50 border-b border-neutral-200/60 bg-white/80 backdrop-blur-lg">
+      <header className="sticky top-0 z-50 border-b border-neutral-200/60 bg-surface/80 backdrop-blur-lg">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-primary-800 shadow-md shadow-primary-600/20">
@@ -41,15 +42,18 @@ export function AdminLayout({ onLogout }: Props) {
               <span className="text-xs font-medium text-neutral-500">IT O'qituvchilar Namangan</span>
             </div>
           </div>
-          <button onClick={handleLogout} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50">
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Chiqish</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button onClick={handleLogout} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Chiqish</span>
+            </button>
+          </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-neutral-200 bg-white p-1.5">
+        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-neutral-200 bg-surface p-1.5">
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id

@@ -4,6 +4,8 @@ type TelegramWebApp = {
   initData: string
   initDataUnsafe?: { user?: { id: number; first_name?: string } }
   colorScheme?: 'light' | 'dark'
+  onEvent?: (event: string, callback: () => void) => void
+  offEvent?: (event: string, callback: () => void) => void
 }
 
 declare global {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { User, Trophy, Puzzle, Swords } from 'lucide-react'
 import { getTelegramWebApp } from './lib/telegram'
 import { callMiniApi } from './lib/api'
+import { useTelegramTheme } from './lib/theme'
 import { ProfileTab } from './ProfileTab'
 import { RatingTab } from './RatingTab'
 import { QuestTab } from './QuestTab'
@@ -43,6 +44,7 @@ const tabs: { id: TabId; label: string; icon: typeof User }[] = [
 ]
 
 export function MiniApp() {
+  useTelegramTheme()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -94,7 +96,7 @@ export function MiniApp() {
         {activeTab === 'battle' && <BattleTab profile={profile} onPointsChanged={loadProfile} />}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur-lg">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-200 bg-surface/95 backdrop-blur-lg">
         <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
           {tabs.map((tab) => {
             const Icon = tab.icon

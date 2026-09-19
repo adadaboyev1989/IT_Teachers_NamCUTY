@@ -2,10 +2,10 @@ import { GraduationCap, Star, Award, Puzzle, Swords, ClipboardCheck, BadgeCheck,
 import type { Profile } from './MiniApp'
 
 const categoryColors: Record<string, string> = {
-  Oliy: 'bg-emerald-50 text-emerald-700',
-  Birinchi: 'bg-primary-50 text-primary-700',
-  Ikkinchi: 'bg-amber-50 text-amber-700',
-  Mutaxassis: 'bg-cyan-50 text-cyan-700',
+  Oliy: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+  Birinchi: 'bg-primary-50 text-primary-700 dark:bg-primary-500/15 dark:text-primary-400',
+  Ikkinchi: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  Mutaxassis: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400',
 }
 
 function stars(rank: number | null, total: number): string {
@@ -35,7 +35,7 @@ export function ProfileTab({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col items-center rounded-2xl bg-white p-6 text-center shadow-sm">
+      <div className="flex flex-col items-center rounded-2xl bg-surface p-6 text-center shadow-sm">
         <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-600/20">
           <GraduationCap className="h-8 w-8" />
         </div>
@@ -47,22 +47,22 @@ export function ProfileTab({ profile }: { profile: Profile }) {
       {/* Certificate expiry warning — shown first so it's the first thing a
           teacher sees, not buried below the fold in the points breakdown. */}
       {profile.has_certificate && certStatus.is_expired && (
-        <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
-          <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500" />
+        <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-500/30 dark:bg-red-500/10">
+          <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500 dark:text-red-400" />
           <div>
-            <p className="text-sm font-semibold text-red-700">Sertifikat muddati tugagan!</p>
-            <p className="mt-0.5 text-xs text-red-600">
+            <p className="text-sm font-semibold text-red-700 dark:text-red-400">Sertifikat muddati tugagan!</p>
+            <p className="mt-0.5 text-xs text-red-600 dark:text-red-400/80">
               {profile.certificate_name} — {formatDate(profile.certificate_expiry_date)} sanasida tugagan ({Math.abs(certStatus.days_until_expiry ?? 0)} kun oldin). Yangilashni unutmang.
             </p>
           </div>
         </div>
       )}
       {profile.has_certificate && !certStatus.is_expired && certStatus.is_expiring_soon && (
-        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" />
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+          <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500 dark:text-amber-400" />
           <div>
-            <p className="text-sm font-semibold text-amber-700">Sertifikat muddati tez orada tugaydi</p>
-            <p className="mt-0.5 text-xs text-amber-600">
+            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Sertifikat muddati tez orada tugaydi</p>
+            <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400/80">
               {profile.certificate_name} — yana {certStatus.days_until_expiry} kundan so'ng ({formatDate(profile.certificate_expiry_date)}) tugaydi.
             </p>
           </div>
@@ -88,7 +88,11 @@ export function ProfileTab({ profile }: { profile: Profile }) {
           <p className="mb-3 px-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">Xalqaro sertifikat</p>
           <div className="flex items-start gap-3">
             <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
-              certStatus.is_expired ? 'bg-red-50 text-red-500' : certStatus.is_expiring_soon ? 'bg-amber-50 text-amber-500' : 'bg-emerald-50 text-emerald-600'
+              certStatus.is_expired
+                ? 'bg-red-50 text-red-500 dark:bg-red-500/15 dark:text-red-400'
+                : certStatus.is_expiring_soon
+                ? 'bg-amber-50 text-amber-500 dark:bg-amber-500/15 dark:text-amber-400'
+                : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400'
             }`}>
               <Award className="h-5 w-5" />
             </div>
@@ -99,7 +103,11 @@ export function ProfileTab({ profile }: { profile: Profile }) {
                 {formatDate(profile.certificate_issue_date)} — {formatDate(profile.certificate_expiry_date)}
               </p>
               <span className={`badge mt-2 text-xs ${
-                certStatus.is_expired ? 'bg-red-50 text-red-600' : certStatus.is_expiring_soon ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-700'
+                certStatus.is_expired
+                  ? 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400'
+                  : certStatus.is_expiring_soon
+                  ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400'
+                  : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
               }`}>
                 {certStatus.is_expired ? 'Muddati tugagan' : certStatus.is_expiring_soon ? `${certStatus.days_until_expiry} kun qoldi` : 'Amal qilmoqda'}
               </span>
@@ -114,7 +122,7 @@ export function ProfileTab({ profile }: { profile: Profile }) {
           {breakdown.map(({ icon: Icon, label, points, muted }) => (
             <div key={label} className="flex items-center justify-between gap-3 py-2.5">
               <div className="flex items-center gap-2.5">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${muted ? 'bg-neutral-100 text-neutral-300' : 'bg-primary-50 text-primary-600'}`}>
+                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${muted ? 'bg-neutral-100 text-neutral-300' : 'bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-primary-400'}`}>
                   <Icon className="h-4 w-4" />
                 </div>
                 <span className={`text-sm ${muted ? 'text-neutral-400' : 'text-neutral-700'}`}>{label}</span>

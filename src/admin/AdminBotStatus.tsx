@@ -106,7 +106,7 @@ export function AdminBotStatus() {
             key={id}
             onClick={() => setFilter(id)}
             className={`rounded-lg px-3.5 py-2 text-sm font-medium transition-all ${
-              filter === id ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20' : 'bg-white text-neutral-600 hover:bg-neutral-100'
+              filter === id ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20' : 'bg-surface text-neutral-600 hover:bg-neutral-100'
             }`}
           >
             {label}
@@ -121,7 +121,7 @@ export function AdminBotStatus() {
       ) : filtered.length === 0 ? (
         <EmptyState message={search ? 'Qidiruv bo\'yicha hech kim topilmadi.' : "Hali pedagog qo'shilmagan."} />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-surface">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-neutral-200 bg-neutral-50">
@@ -146,7 +146,7 @@ export function AdminBotStatus() {
                       <td className="hidden px-4 py-3 text-neutral-600 md:table-cell">{pedagog.school}</td>
                       <td className="px-4 py-3">
                         {botUser?.is_registered ? (
-                          <span className="badge inline-flex items-center gap-1 bg-emerald-50 text-emerald-700"><CheckCircle2 className="h-3.5 w-3.5" />Ulangan</span>
+                          <span className="badge inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"><CheckCircle2 className="h-3.5 w-3.5" />Ulangan</span>
                         ) : (
                           <span className="badge inline-flex items-center gap-1 bg-neutral-100 text-neutral-500"><CircleSlash className="h-3.5 w-3.5" />Ulanmagan</span>
                         )}
@@ -182,10 +182,10 @@ function StatCard({
   color: 'primary' | 'emerald' | 'amber' | 'cyan'
 }) {
   const colorMap = {
-    primary: 'bg-primary-50 text-primary-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    amber: 'bg-amber-50 text-amber-600',
-    cyan: 'bg-cyan-50 text-cyan-600',
+    primary: 'bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-primary-400',
+    emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
+    amber: 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400',
+    cyan: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-500/15 dark:text-cyan-400',
   }
   return (
     <div className="card p-5">

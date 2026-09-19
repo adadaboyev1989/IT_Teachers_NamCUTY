@@ -45,12 +45,12 @@ export function AdminRatingSettings() {
       {loading ? (
         <LoadingSpinner />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-surface">
           <div className="divide-y divide-neutral-100">
             {settings.map((s) => (
               <div key={s.key} className="flex items-center justify-between gap-4 px-5 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-primary-400">
                     <SlidersHorizontal className="h-4 w-4" />
                   </div>
                   <div>

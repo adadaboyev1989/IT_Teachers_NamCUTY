@@ -7,10 +7,10 @@ import { SectionHeader, SearchBar, LoadingSpinner, EmptyState, Modal, FormField,
 const categories: PedagogCategory[] = ['Oliy', 'Birinchi', 'Ikkinchi', 'Mutaxassis']
 
 const categoryColors: Record<string, string> = {
-  Oliy: 'bg-emerald-50 text-emerald-700',
-  Birinchi: 'bg-primary-50 text-primary-700',
-  Ikkinchi: 'bg-amber-50 text-amber-700',
-  Mutaxassis: 'bg-cyan-50 text-cyan-700',
+  Oliy: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+  Birinchi: 'bg-primary-50 text-primary-700 dark:bg-primary-500/15 dark:text-primary-400',
+  Ikkinchi: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  Mutaxassis: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400',
 }
 
 function formatDate(dateStr: string | null): string {
@@ -190,7 +190,7 @@ export function AdminPedagog() {
       </div>
 
       {importMsg && (
-        <div className={`mb-5 rounded-lg px-4 py-3 text-sm ${importMsg.includes('xatosi') || importMsg.includes('topilmadi') || importMsg.includes("o'qib") ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+        <div className={`mb-5 rounded-lg px-4 py-3 text-sm ${importMsg.includes('xatosi') || importMsg.includes('topilmadi') || importMsg.includes("o'qib") ? 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400'}`}>
           {importMsg}
           <button onClick={() => setImportMsg(null)} className="ml-3 text-current opacity-60 hover:opacity-100"><X className="inline h-3.5 w-3.5" /></button>
         </div>
@@ -203,7 +203,7 @@ export function AdminPedagog() {
       ) : filtered.length === 0 ? (
         <EmptyState message={search ? 'Qidiruv bo\'yicha pedagoglar topilmadi.' : "Hali pedagog ma'lumotlari yo'q."} />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-surface">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-neutral-200 bg-neutral-50">
@@ -238,7 +238,7 @@ export function AdminPedagog() {
                             const warning = certificateWarning(p.certificate_expiry_date)
                             if (!warning) return null
                             return (
-                              <span className={`mt-0.5 inline-flex w-fit items-center gap-1 text-xs font-medium ${warning === 'expired' ? 'text-red-600' : 'text-amber-600'}`}>
+                              <span className={`mt-0.5 inline-flex w-fit items-center gap-1 text-xs font-medium ${warning === 'expired' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`}>
                                 <AlertTriangle className="h-3 w-3" />
                                 {warning === 'expired' ? 'Muddati tugagan' : 'Tez orada tugaydi'}
                               </span>
@@ -249,8 +249,8 @@ export function AdminPedagog() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => { setEditing(p); setShowForm(true) }} className="rounded-lg p-1.5 text-neutral-400 transition-all hover:bg-primary-50 hover:text-primary-600"><Edit3 className="h-4 w-4" /></button>
-                        <button onClick={() => handleDelete(p.id)} className="rounded-lg p-1.5 text-neutral-400 transition-all hover:bg-red-50 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
+                        <button onClick={() => { setEditing(p); setShowForm(true) }} className="rounded-lg p-1.5 text-neutral-400 transition-all hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/10 dark:hover:text-primary-400"><Edit3 className="h-4 w-4" /></button>
+                        <button onClick={() => handleDelete(p.id)} className="rounded-lg p-1.5 text-neutral-400 transition-all hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </td>
                   </tr>

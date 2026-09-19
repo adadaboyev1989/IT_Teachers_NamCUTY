@@ -52,7 +52,7 @@ export function QuestTab({ onPointsChanged }: { onPointsChanged: () => void }) {
     <div>
       <h2 className="mb-4 font-display text-lg font-bold text-neutral-900">Quest — Escape Room</h2>
       {stages.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white py-16 text-center text-sm text-neutral-400">Hali bosqich yo'q</div>
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-surface py-16 text-center text-sm text-neutral-400">Hali bosqich yo'q</div>
       ) : (
         <div className="space-y-3">
           {stages.map((stage) => (
@@ -63,7 +63,7 @@ export function QuestTab({ onPointsChanged }: { onPointsChanged: () => void }) {
               className="card flex w-full items-center gap-3 p-4 text-left transition-all disabled:opacity-50"
             >
               <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
-                stage.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : stage.status === 'locked' ? 'bg-neutral-100 text-neutral-400' : 'bg-primary-50 text-primary-600'
+                stage.status === 'completed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400' : stage.status === 'locked' ? 'bg-neutral-100 text-neutral-400' : 'bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-primary-400'
               }`}>
                 {stage.status === 'locked' ? <Lock className="h-5 w-5" /> : stage.status === 'completed' ? <CheckCircle2 className="h-5 w-5" /> : <Play className="h-5 w-5" />}
               </div>
@@ -72,7 +72,7 @@ export function QuestTab({ onPointsChanged }: { onPointsChanged: () => void }) {
                 {stage.description && <p className="truncate text-xs text-neutral-500">{stage.description}</p>}
               </div>
               <div className="flex-shrink-0 text-right">
-                {stage.status === 'completed' && <p className="text-sm font-bold text-emerald-600">{stage.score} ball</p>}
+                {stage.status === 'completed' && <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{stage.score} ball</p>}
                 {stage.time_limit_seconds && (
                   <p className="flex items-center gap-1 text-xs text-neutral-400"><Clock className="h-3 w-3" />{stage.time_limit_seconds}s</p>
                 )}
@@ -137,7 +137,7 @@ function StagePlayer({ stage, onBack }: { stage: Stage; onBack: () => void }) {
         <div className="card p-8 text-center">
           <p className="text-4xl">🎉</p>
           <p className="mt-2 font-display text-lg font-bold text-neutral-900">Bosqich yakunlandi!</p>
-          {stageDone && stageDone.bonus > 0 && <p className="mt-1 text-sm text-emerald-600">+{stageDone.bonus} bonus ball</p>}
+          {stageDone && stageDone.bonus > 0 && <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400">+{stageDone.bonus} bonus ball</p>}
         </div>
       ) : current ? (
         <div className="card p-5">
@@ -154,7 +154,7 @@ function StagePlayer({ stage, onBack }: { stage: Stage; onBack: () => void }) {
                   disabled={submitting || showFeedback}
                   onClick={() => handleAnswer(i)}
                   className={`w-full rounded-lg border px-4 py-3 text-left text-sm transition-all ${
-                    isCorrectOption ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : isWrongPick ? 'border-red-300 bg-red-50 text-red-600' : 'border-neutral-200 bg-white hover:border-primary-300'
+                    isCorrectOption ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-400' : isWrongPick ? 'border-red-300 bg-red-50 text-red-600 dark:border-red-500/40 dark:bg-red-500/15 dark:text-red-400' : 'border-neutral-200 bg-surface hover:border-primary-300'
                   }`}
                 >
                   {opt}
@@ -164,7 +164,7 @@ function StagePlayer({ stage, onBack }: { stage: Stage; onBack: () => void }) {
           </div>
           {feedback && (
             <div className="mt-4 flex items-center justify-between">
-              <p className={`text-sm font-medium ${feedback.correct ? 'text-emerald-600' : 'text-red-500'}`}>
+              <p className={`text-sm font-medium ${feedback.correct ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
                 {feedback.correct ? `✅ To'g'ri! +${feedback.points} ball` : "❌ Noto'g'ri javob"}
               </p>
               <button onClick={next} className="btn-primary">Keyingisi</button>

@@ -37,16 +37,16 @@ export function AdminTasks() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tasks.map((task) => (
-            <div key={task.id} className={`card cursor-pointer p-5 transition-all hover:border-primary-300 ${selectedTask?.id === task.id ? 'border-primary-400 ring-2 ring-primary-100' : ''}`} onClick={() => setSelectedTask(task)}>
+            <div key={task.id} className={`card cursor-pointer p-5 transition-all hover:border-primary-300 dark:hover:border-primary-500/40 ${selectedTask?.id === task.id ? 'border-primary-400 ring-2 ring-primary-100 dark:border-primary-500/60 dark:ring-primary-500/20' : ''}`} onClick={() => setSelectedTask(task)}>
               <div className="mb-2 flex items-start justify-between">
-                <span className="badge bg-primary-50 text-primary-700">{task.points} ball</span>
+                <span className="badge bg-primary-50 text-primary-700 dark:bg-primary-500/15 dark:text-primary-400">{task.points} ball</span>
                 {!task.is_active && <span className="badge bg-neutral-100 text-neutral-500">Nofaol</span>}
               </div>
               <h3 className="font-display font-bold text-neutral-900">{task.title}</h3>
               {task.description && <p className="mt-1 line-clamp-2 text-sm text-neutral-500">{task.description}</p>}
               <div className="mt-3 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                <button onClick={() => { setEditing(task); setShowForm(true) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-primary-50 hover:text-primary-600"><Edit3 className="h-4 w-4" /></button>
-                <button onClick={() => handleDelete(task.id)} className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
+                <button onClick={() => { setEditing(task); setShowForm(true) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/10 dark:hover:text-primary-400"><Edit3 className="h-4 w-4" /></button>
+                <button onClick={() => handleDelete(task.id)} className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
               </div>
             </div>
           ))}
@@ -181,7 +181,7 @@ function CompletionsPanel({ task }: { task: Task }) {
                   onClick={() => toggle(p.id, completed)}
                   disabled={togglingId === p.id}
                   className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                    completed ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+                    completed ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
                   }`}
                 >
                   {togglingId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}

@@ -42,7 +42,7 @@ export function LoadingSpinner() {
 
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-neutral-300 bg-white py-20 text-center">
+    <div className="rounded-2xl border border-dashed border-neutral-300 bg-surface py-20 text-center">
       <p className="text-sm font-medium text-neutral-500">{message}</p>
     </div>
   )
@@ -52,8 +52,8 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-neutral-900/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl animate-scale-in">
-        <div className="sticky top-0 flex items-center justify-between border-b border-neutral-100 bg-white px-6 py-4">
+      <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-surface shadow-2xl animate-scale-in">
+        <div className="sticky top-0 flex items-center justify-between border-b border-neutral-100 bg-surface px-6 py-4">
           <h3 className="font-display text-lg font-bold text-neutral-900">{title}</h3>
           <button onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600">
             <X className="h-5 w-5" />
@@ -75,7 +75,7 @@ export function FormField({ label, children }: { label: string; children: ReactN
 }
 
 export function ErrorBox({ message }: { message: string }) {
-  return <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{message}</div>
+  return <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600 dark:bg-red-500/15 dark:text-red-400">{message}</div>
 }
 
 export function FormActions({ onClose, saving, saveLabel }: { onClose: () => void; saving: boolean; saveLabel: string }) {

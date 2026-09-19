@@ -143,7 +143,7 @@ export function BattleTab({ profile, onPointsChanged }: { profile: Profile; onPo
         <h2 className="font-display text-lg font-bold text-neutral-900">Onlayn o'qituvchilar</h2>
       </div>
       {online.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white py-16 text-center text-sm text-neutral-400">Hozircha hech kim onlayn emas</div>
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-surface py-16 text-center text-sm text-neutral-400">Hozircha hech kim onlayn emas</div>
       ) : (
         <div className="space-y-2">
           {online.map((t) => (
@@ -224,7 +224,7 @@ function MatchView({ matchId, onFinished }: { matchId: string; onFinished: (res:
               disabled={answered}
               onClick={() => handleAnswer(i)}
               className={`w-full rounded-lg border px-4 py-3 text-left text-sm transition-all ${
-                isCorrect ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : isWrong ? 'border-red-300 bg-red-50 text-red-600' : 'border-neutral-200 bg-white hover:border-primary-300 disabled:opacity-60'
+                isCorrect ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-400' : isWrong ? 'border-red-300 bg-red-50 text-red-600 dark:border-red-500/40 dark:bg-red-500/15 dark:text-red-400' : 'border-neutral-200 bg-surface hover:border-primary-300 disabled:opacity-60'
               }`}
             >
               {opt}

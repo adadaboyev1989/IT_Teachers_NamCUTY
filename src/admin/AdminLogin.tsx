@@ -41,7 +41,7 @@ export function AdminLogin({ onSuccess }: Props) {
           <p className="mt-1 text-sm text-primary-200">IT O'qituvchilar Namangan</p>
         </div>
 
-        <div className="rounded-2xl bg-white p-8 shadow-2xl animate-scale-in">
+        <div className="rounded-2xl bg-surface p-8 shadow-2xl animate-scale-in">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-neutral-700">Login</label>
@@ -57,7 +57,7 @@ export function AdminLogin({ onSuccess }: Props) {
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input-field pl-11" placeholder="••••••••" required />
               </div>
             </div>
-            {error && <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</div>}
+            {error && <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-600 dark:bg-red-500/15 dark:text-red-400">{error}</div>}
             <button type="submit" disabled={loading} className="btn-primary w-full">
               {loading ? (<><Loader2 className="h-4 w-4 animate-spin" />Kirilmoqda...</>) : ('Tizimga kirish')}
             </button>

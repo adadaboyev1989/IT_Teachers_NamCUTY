@@ -48,13 +48,13 @@ export function AdminBattle() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {q.options.map((opt, i) => (
-                      <span key={i} className={`badge text-xs ${i === q.correct_option ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>{opt}</span>
+                      <span key={i} className={`badge text-xs ${i === q.correct_option ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500'}`}>{opt}</span>
                     ))}
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => { setEditing(q); setShowForm(true) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-primary-50 hover:text-primary-600"><Edit3 className="h-4 w-4" /></button>
-                  <button onClick={() => handleDelete(q.id)} className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={() => { setEditing(q); setShowForm(true) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/10 dark:hover:text-primary-400"><Edit3 className="h-4 w-4" /></button>
+                  <button onClick={() => handleDelete(q.id)} className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                 </div>
               </div>
             </div>

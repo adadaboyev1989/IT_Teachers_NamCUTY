@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -24,17 +25,29 @@ export default {
         accent: {
           500: '#f59e0b',
         },
+        // `surface` and `neutral-*` are driven by CSS variables (defined in
+        // index.css, flipped under the `.dark` class) rather than fixed hex
+        // values. That's what lets every existing `bg-neutral-50`,
+        // `text-neutral-900` etc. across the app automatically adapt to dark
+        // mode with no per-component `dark:` classes needed — only the
+        // saturated badge colors (emerald/amber/red/primary-50 tints) need
+        // explicit dark: variants, since those stay on Tailwind's static
+        // palette. `white` itself is deliberately left as real, fixed white —
+        // it's used for text on colored gradients (always light), whereas
+        // card/header backgrounds use the new `surface` token instead of
+        // `white` so they can go dark.
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
         neutral: {
-          50: '#f9fafb',
-          100: '#f3f4f6',
-          200: '#e5e7eb',
-          300: '#d1d5db',
-          400: '#9ca3af',
-          500: '#6b7280',
-          600: '#4b5563',
-          700: '#374151',
-          800: '#1f2937',
-          900: '#111827',
+          50: 'rgb(var(--color-neutral-50) / <alpha-value>)',
+          100: 'rgb(var(--color-neutral-100) / <alpha-value>)',
+          200: 'rgb(var(--color-neutral-200) / <alpha-value>)',
+          300: 'rgb(var(--color-neutral-300) / <alpha-value>)',
+          400: 'rgb(var(--color-neutral-400) / <alpha-value>)',
+          500: 'rgb(var(--color-neutral-500) / <alpha-value>)',
+          600: 'rgb(var(--color-neutral-600) / <alpha-value>)',
+          700: 'rgb(var(--color-neutral-700) / <alpha-value>)',
+          800: 'rgb(var(--color-neutral-800) / <alpha-value>)',
+          900: 'rgb(var(--color-neutral-900) / <alpha-value>)',
         },
       },
       animation: {

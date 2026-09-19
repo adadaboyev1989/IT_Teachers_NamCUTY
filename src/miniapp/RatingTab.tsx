@@ -35,8 +35,8 @@ export function RatingTab({ myId }: { myId: string }) {
       </div>
       <div className="space-y-2">
         {rows.map((row, i) => (
-          <div key={row.pedagog_data_id} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${row.pedagog_data_id === myId ? 'bg-primary-50 ring-1 ring-primary-200' : 'bg-white'}`}>
-            <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${i < 3 ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-500'}`}>{i + 1}</div>
+          <div key={row.pedagog_data_id} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${row.pedagog_data_id === myId ? 'bg-primary-50 ring-1 ring-primary-200 dark:bg-primary-500/10 dark:ring-primary-500/30' : 'bg-surface'}`}>
+            <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${i < 3 ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' : 'bg-neutral-100 text-neutral-500'}`}>{i + 1}</div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-neutral-900">{row.full_name}</p>
               <p className="truncate text-xs text-neutral-400">{row.school}</p>

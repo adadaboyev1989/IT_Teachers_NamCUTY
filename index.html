@@ -9,6 +9,31 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      // Applied synchronously, before first paint, so there's no flash of
+      // the wrong theme. Inside Telegram, the Mini App follows the host
+      // app's theme; everywhere else (the admin panel, or testing the Mini
+      // App in a plain browser) it's the admin's stored choice, falling
+      // back to the OS/browser preference. React's own theme code (see
+      // src/lib/theme.ts and src/miniapp/lib/theme.ts) picks up from here
+      // and keeps it in sync afterwards (toggle clicks, Telegram theme
+      // changes, etc).
+      (function () {
+        try {
+          var tg = window.Telegram && window.Telegram.WebApp;
+          var theme;
+          if (tg && tg.colorScheme) {
+            theme = tg.colorScheme;
+          } else {
+            var stored = localStorage.getItem('theme');
+            theme = stored === 'light' || stored === 'dark'
+              ? stored
+              : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          }
+          if (theme === 'dark') document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

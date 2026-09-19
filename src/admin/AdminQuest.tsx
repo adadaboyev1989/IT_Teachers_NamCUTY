@@ -37,9 +37,9 @@ export function AdminQuest() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {stages.map((stage) => (
-            <div key={stage.id} className={`card cursor-pointer p-5 transition-all hover:border-primary-300 ${selectedStage?.id === stage.id ? 'border-primary-400 ring-2 ring-primary-100' : ''}`} onClick={() => setSelectedStage(stage)}>
+            <div key={stage.id} className={`card cursor-pointer p-5 transition-all hover:border-primary-300 dark:hover:border-primary-500/40 ${selectedStage?.id === stage.id ? 'border-primary-400 ring-2 ring-primary-100 dark:border-primary-500/60 dark:ring-primary-500/20' : ''}`} onClick={() => setSelectedStage(stage)}>
               <div className="mb-2 flex items-start justify-between">
-                <span className="badge bg-primary-50 text-primary-700">#{stage.order_index}</span>
+                <span className="badge bg-primary-50 text-primary-700 dark:bg-primary-500/15 dark:text-primary-400">#{stage.order_index}</span>
                 {!stage.is_active && <span className="badge bg-neutral-100 text-neutral-500">Nofaol</span>}
               </div>
               <h3 className="font-display font-bold text-neutral-900">{stage.title}</h3>
@@ -49,8 +49,8 @@ export function AdminQuest() {
                   <span className="inline-flex items-center gap-1 text-xs text-neutral-400"><Clock className="h-3.5 w-3.5" />{stage.time_limit_seconds}s</span>
                 ) : <span />}
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                  <button onClick={() => { setEditing(stage); setShowForm(true) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-primary-50 hover:text-primary-600"><Edit3 className="h-4 w-4" /></button>
-                  <button onClick={() => handleDelete(stage.id)} className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={() => { setEditing(stage); setShowForm(true) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/10 dark:hover:text-primary-400"><Edit3 className="h-4 w-4" /></button>
+                  <button onClick={() => handleDelete(stage.id)} className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                   <ChevronRight className="h-4 w-4 text-neutral-300" />
                 </div>
               </div>
@@ -168,14 +168,14 @@ function QuestionsPanel({ stage }: { stage: QuestStage }) {
                   <p className="text-sm font-medium text-neutral-900">{idx + 1}. {q.question}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {q.options.map((opt, i) => (
-                      <span key={i} className={`badge text-xs ${i === q.correct_option ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>{opt}</span>
+                      <span key={i} className={`badge text-xs ${i === q.correct_option ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500'}`}>{opt}</span>
                     ))}
                   </div>
                   <p className="mt-2 text-xs text-neutral-400">{q.points} ball</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => { setEditing(q); setShowForm(true) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-primary-50 hover:text-primary-600"><Edit3 className="h-4 w-4" /></button>
-                  <button onClick={() => handleDelete(q.id)} className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={() => { setEditing(q); setShowForm(true) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/10 dark:hover:text-primary-400"><Edit3 className="h-4 w-4" /></button>
+                  <button onClick={() => handleDelete(q.id)} className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                 </div>
               </div>
             </div>
