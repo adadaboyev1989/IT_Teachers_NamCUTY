@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import type { PedagogData, PedagogCategory } from '../types'
-import { Trash2, Edit3, Upload, Download, FileSpreadsheet, X, Loader2, Clock, Award } from 'lucide-react'
+import { Trash2, Edit3, Upload, Download, FileSpreadsheet, X, Loader2, Clock, Award, AlertTriangle } from 'lucide-react'
 import { SectionHeader, SearchBar, LoadingSpinner, EmptyState, Modal, FormField, ErrorBox, FormActions } from './shared'
 
 const categories: PedagogCategory[] = ['Oliy', 'Birinchi', 'Ikkinchi', 'Mutaxassis']
@@ -18,6 +18,19 @@ function formatDate(dateStr: string | null): string {
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return '—'
   return d.toLocaleDateString('uz-UZ', { year: 'numeric', month: '2-digit', day: '2-digit' })
+}
+
+// Same 30-day warning window as miniapp-api's certificateStatus() — kept in
+// sync manually since the admin panel reads pedagog_data directly rather
+// than through that API.
+const CERTIFICATE_EXPIRY_WARNING_DAYS = 30
+
+function certificateWarning(expiryDate: string | null): 'expired' | 'expiring_soon' | null {
+  if (!expiryDate) return null
+  const days = Math.ceil((new Date(expiryDate).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+  if (days < 0) return 'expired'
+  if (days <= CERTIFICATE_EXPIRY_WARNING_DAYS) return 'expiring_soon'
+  return null
 }
 
 export function AdminPedagog() {
@@ -221,6 +234,16 @@ export function AdminPedagog() {
                         <div className="flex flex-col gap-0.5">
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-neutral-700"><Award className="h-3.5 w-3.5 text-amber-500" />{p.certificate_name}</span>
                           <span className="text-xs text-neutral-400">{formatDate(p.certificate_issue_date)} — {formatDate(p.certificate_expiry_date)}</span>
+                          {(() => {
+                            const warning = certificateWarning(p.certificate_expiry_date)
+                            if (!warning) return null
+                            return (
+                              <span className={`mt-0.5 inline-flex w-fit items-center gap-1 text-xs font-medium ${warning === 'expired' ? 'text-red-600' : 'text-amber-600'}`}>
+                                <AlertTriangle className="h-3 w-3" />
+                                {warning === 'expired' ? 'Muddati tugagan' : 'Tez orada tugaydi'}
+                              </span>
+                            )
+                          })()}
                         </div>
                       ) : <span className="text-xs text-neutral-400">—</span>}
                     </td>

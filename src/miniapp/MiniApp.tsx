@@ -7,12 +7,22 @@ import { RatingTab } from './RatingTab'
 import { QuestTab } from './QuestTab'
 import { BattleTab } from './BattleTab'
 
+export type CertificateStatus = {
+  days_until_expiry: number | null
+  is_expired: boolean
+  is_expiring_soon: boolean
+}
+
 export type Profile = {
   pedagog_data_id: string
   full_name: string
   school: string
   category: string
   has_certificate: boolean
+  certificate_name: string | null
+  certificate_issue_date: string | null
+  certificate_expiry_date: string | null
+  certificate_status: CertificateStatus
   category_points: number
   certificate_points: number
   quest_points: number

@@ -26,6 +26,8 @@ type Pedagog = {
   school: string;
   category: string;
   certificate_name: string | null;
+  certificate_issue_date: string | null;
+  certificate_expiry_date: string | null;
 };
 
 // Verifies initData and resolves it to a registered teacher's pedagog_data
@@ -42,7 +44,11 @@ async function resolveTeacher(initData: unknown): Promise<{ pedagog: Pedagog } |
     return { error: "Ro'yxatdan o'tmagansiz. Iltimos, botda /start bosing.", status: 403 };
   }
 
-  const { data: pedagog } = await supabase.from("pedagog_data").select("id, full_name, school, category, certificate_name").eq("id", botUser.pedagog_data_id).maybeSingle();
+  const { data: pedagog } = await supabase
+    .from("pedagog_data")
+    .select("id, full_name, school, category, certificate_name, certificate_issue_date, certificate_expiry_date")
+    .eq("id", botUser.pedagog_data_id)
+    .maybeSingle();
   if (!pedagog) return { error: "Pedagog ma'lumotlari topilmadi", status: 404 };
 
   return { pedagog };
@@ -54,6 +60,19 @@ async function getSetting(key: string, fallback: number): Promise<number> {
 }
 
 // --- Profile ---
+
+// A certificate counts as "expiring soon" inside this many days of its
+// expiry date — the Mini App shows an amber warning in that window, and red
+// once it's actually passed, so a teacher notices before it lapses instead
+// of finding out after.
+const CERTIFICATE_EXPIRY_WARNING_DAYS = 30;
+
+function certificateStatus(expiryDate: string | null): { days_until_expiry: number | null; is_expired: boolean; is_expiring_soon: boolean } {
+  if (!expiryDate) return { days_until_expiry: null, is_expired: false, is_expiring_soon: false };
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const days = Math.ceil((new Date(expiryDate).getTime() - Date.now()) / msPerDay);
+  return { days_until_expiry: days, is_expired: days < 0, is_expiring_soon: days >= 0 && days <= CERTIFICATE_EXPIRY_WARNING_DAYS };
+}
 
 async function handleProfile(pedagog: Pedagog) {
   const { data: board } = await supabase.from("leaderboard").select("*").order("total_points", { ascending: false });
@@ -68,6 +87,10 @@ async function handleProfile(pedagog: Pedagog) {
       school: pedagog.school,
       category: pedagog.category,
       has_certificate: !!pedagog.certificate_name,
+      certificate_name: pedagog.certificate_name,
+      certificate_issue_date: pedagog.certificate_issue_date,
+      certificate_expiry_date: pedagog.certificate_expiry_date,
+      certificate_status: certificateStatus(pedagog.certificate_expiry_date),
       category_points: me?.category_points ?? 0,
       certificate_points: me?.certificate_points ?? 0,
       quest_points: me?.quest_points ?? 0,

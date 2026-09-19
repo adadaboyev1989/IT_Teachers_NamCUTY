@@ -1,4 +1,4 @@
-import { GraduationCap, Star, Award, Puzzle, Swords, ClipboardCheck, BadgeCheck } from 'lucide-react'
+import { GraduationCap, Star, Award, Puzzle, Swords, ClipboardCheck, BadgeCheck, AlertTriangle, Clock, Calendar } from 'lucide-react'
 import type { Profile } from './MiniApp'
 
 const categoryColors: Record<string, string> = {
@@ -15,11 +15,20 @@ function stars(rank: number | null, total: number): string {
   return '⭐'.repeat(full) + '☆'.repeat(5 - full)
 }
 
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '—'
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('uz-UZ', { year: 'numeric', month: '2-digit', day: '2-digit' })
+}
+
 export function ProfileTab({ profile }: { profile: Profile }) {
+  const { certificate_status: certStatus } = profile
+
   const breakdown = [
     { icon: BadgeCheck, label: `Toifa (${profile.category})`, points: profile.category_points },
     { icon: Award, label: profile.has_certificate ? 'Xalqaro sertifikat' : "Xalqaro sertifikat yo'q", points: profile.certificate_points, muted: !profile.has_certificate },
-    { icon: Puzzle, label: 'Quest (o\'yinlar)', points: profile.quest_points },
+    { icon: Puzzle, label: "Quest (o'yinlar)", points: profile.quest_points },
     { icon: Swords, label: 'Battle', points: profile.battle_points },
     { icon: ClipboardCheck, label: 'Topshiriqlar', points: profile.task_points },
   ]
@@ -35,6 +44,31 @@ export function ProfileTab({ profile }: { profile: Profile }) {
         <span className={`badge mt-2 ${categoryColors[profile.category] || 'bg-neutral-100 text-neutral-600'}`}>{profile.category}</span>
       </div>
 
+      {/* Certificate expiry warning — shown first so it's the first thing a
+          teacher sees, not buried below the fold in the points breakdown. */}
+      {profile.has_certificate && certStatus.is_expired && (
+        <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500" />
+          <div>
+            <p className="text-sm font-semibold text-red-700">Sertifikat muddati tugagan!</p>
+            <p className="mt-0.5 text-xs text-red-600">
+              {profile.certificate_name} — {formatDate(profile.certificate_expiry_date)} sanasida tugagan ({Math.abs(certStatus.days_until_expiry ?? 0)} kun oldin). Yangilashni unutmang.
+            </p>
+          </div>
+        </div>
+      )}
+      {profile.has_certificate && !certStatus.is_expired && certStatus.is_expiring_soon && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" />
+          <div>
+            <p className="text-sm font-semibold text-amber-700">Sertifikat muddati tez orada tugaydi</p>
+            <p className="mt-0.5 text-xs text-amber-600">
+              {profile.certificate_name} — yana {certStatus.days_until_expiry} kundan so'ng ({formatDate(profile.certificate_expiry_date)}) tugaydi.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="card p-6 text-center">
         <div className="font-display text-5xl font-extrabold text-primary-600">{profile.total_points}</div>
         <p className="mt-1 text-sm text-neutral-500">Sizning reyting balingiz</p>
@@ -48,6 +82,31 @@ export function ProfileTab({ profile }: { profile: Profile }) {
         </div>
         <p className="mt-1 text-xs text-neutral-500">O'rin (jami {profile.total_teachers} o'qituvchi)</p>
       </div>
+
+      {profile.has_certificate && (
+        <div className="card p-4">
+          <p className="mb-3 px-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">Xalqaro sertifikat</p>
+          <div className="flex items-start gap-3">
+            <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
+              certStatus.is_expired ? 'bg-red-50 text-red-500' : certStatus.is_expiring_soon ? 'bg-amber-50 text-amber-500' : 'bg-emerald-50 text-emerald-600'
+            }`}>
+              <Award className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-neutral-900">{profile.certificate_name}</p>
+              <p className="mt-1 flex items-center gap-1 text-xs text-neutral-500">
+                <Calendar className="h-3 w-3" />
+                {formatDate(profile.certificate_issue_date)} — {formatDate(profile.certificate_expiry_date)}
+              </p>
+              <span className={`badge mt-2 text-xs ${
+                certStatus.is_expired ? 'bg-red-50 text-red-600' : certStatus.is_expiring_soon ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-700'
+              }`}>
+                {certStatus.is_expired ? 'Muddati tugagan' : certStatus.is_expiring_soon ? `${certStatus.days_until_expiry} kun qoldi` : 'Amal qilmoqda'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card p-4">
         <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">Ball taqsimoti</p>
