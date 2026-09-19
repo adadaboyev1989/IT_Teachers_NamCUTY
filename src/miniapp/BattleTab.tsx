@@ -2,13 +2,21 @@ import { useEffect, useRef, useState } from 'react'
 import { Swords, Users, Loader2, Trophy } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { callMiniApi } from './lib/api'
+import { Confetti, PointToast } from './lib/effects'
 import type { Profile } from './MiniApp'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 type OnlineTeacher = { pedagog_data_id: string; full_name: string; school: string }
 type IncomingChallenge = { from_id: string; from_name: string }
 type RoundQuestion = { id: string; question: string; options: string[] }
-type MatchResult = { finished: true; winner_id: string | null; player1?: { id: string; correct: number }; player2?: { id: string; correct: number } }
+type MatchResult = {
+  finished: true
+  winner_id: string | null
+  win_points?: number
+  draw_points?: number
+  player1?: { id: string; correct: number }
+  player2?: { id: string; correct: number }
+}
 
 type Phase = 'lobby' | 'incoming' | 'waiting' | 'in-match' | 'finished'
 
@@ -98,14 +106,12 @@ export function BattleTab({ profile, onPointsChanged }: { profile: Profile; onPo
   }
 
   if (phase === 'finished' && result) {
-    const won = result.winner_id === profile.pedagog_data_id
-    const draw = !result.winner_id
     return (
-      <div className="card p-8 text-center">
-        <Trophy className={`mx-auto h-12 w-12 ${won ? 'text-amber-500' : 'text-neutral-300'}`} />
-        <p className="mt-3 font-display text-xl font-bold text-neutral-900">{draw ? 'Durang!' : won ? "🎉 G'alaba!" : 'Mag\'lubiyat'}</p>
-        <button onClick={() => { setPhase('lobby'); setResult(null); setMatchId(null) }} className="btn-primary mt-5">Lobiga qaytish</button>
-      </div>
+      <MatchResultCard
+        result={result}
+        myId={profile.pedagog_data_id}
+        onBack={() => { setPhase('lobby'); setResult(null); setMatchId(null) }}
+      />
     )
   }
 
@@ -164,19 +170,42 @@ export function BattleTab({ profile, onPointsChanged }: { profile: Profile; onPo
   )
 }
 
+function MatchResultCard({ result, myId, onBack }: { result: MatchResult; myId: string; onBack: () => void }) {
+  const won = result.winner_id === myId
+  const draw = !result.winner_id
+  const earned = draw ? result.draw_points || 0 : won ? result.win_points || 0 : 0
+
+  return (
+    <div className="card relative p-8 text-center">
+      {won && <Confetti />}
+      <div className={`relative mx-auto flex h-20 w-20 items-center justify-center rounded-full ${
+        won ? 'animate-pop-in bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg shadow-amber-500/30' : draw ? 'bg-primary-50 dark:bg-primary-500/15' : 'bg-neutral-100'
+      }`}>
+        <Trophy className={`h-9 w-9 ${won ? 'text-white' : draw ? 'text-primary-500 dark:text-primary-400' : 'text-neutral-400'}`} />
+      </div>
+      <p className="mt-4 font-display text-xl font-bold text-neutral-900">{draw ? 'Durang!' : won ? "🎉 G'alaba!" : 'Mag\'lubiyat'}</p>
+      {earned > 0 && (
+        <p className="animate-fade-in mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400">+{earned} ball {draw ? '(durang uchun)' : "(g'alaba uchun)"}</p>
+      )}
+      <button onClick={onBack} className="btn-primary mt-5 w-full">Lobiga qaytish</button>
+    </div>
+  )
+}
+
 function MatchView({ matchId, onFinished }: { matchId: string; onFinished: (res: MatchResult) => void }) {
   const [question, setQuestion] = useState<RoundQuestion | null>(null)
   const [roundId, setRoundId] = useState<string | null>(null)
   const [answered, setAnswered] = useState(false)
   const [feedback, setFeedback] = useState<{ correct: boolean; correctOption: number; selected: number } | null>(null)
+  const [pointToast, setPointToast] = useState<{ points: number; key: number } | null>(null)
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const fetchNextRound = async () => {
-    const res = await callMiniApi<{ round_id?: string; question?: RoundQuestion; finished?: boolean; winner_id?: string | null; player1?: { id: string; correct: number }; player2?: { id: string; correct: number } }>('/battle/next-round', { match_id: matchId })
+    const res = await callMiniApi<{ round_id?: string; question?: RoundQuestion; finished?: boolean; winner_id?: string | null; win_points?: number; draw_points?: number; player1?: { id: string; correct: number }; player2?: { id: string; correct: number } }>('/battle/next-round', { match_id: matchId })
     if (!res.ok) return
 
     if (res.finished) {
-      onFinished({ finished: true, winner_id: res.winner_id ?? null, player1: res.player1, player2: res.player2 })
+      onFinished({ finished: true, winner_id: res.winner_id ?? null, win_points: res.win_points, draw_points: res.draw_points, player1: res.player1, player2: res.player2 })
       return
     }
 
@@ -185,6 +214,7 @@ function MatchView({ matchId, onFinished }: { matchId: string; onFinished: (res:
       setQuestion(res.question || null)
       setAnswered(false)
       setFeedback(null)
+      setPointToast(null)
     } else if (res.round_id === roundId && answered) {
       // Same round, we've already answered — keep polling until the
       // opponent answers too and the server hands us the next round.
@@ -198,11 +228,20 @@ function MatchView({ matchId, onFinished }: { matchId: string; onFinished: (res:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId])
 
+  useEffect(() => {
+    if (!pointToast) return
+    const t = setTimeout(() => setPointToast(null), 1300)
+    return () => clearTimeout(t)
+  }, [pointToast])
+
   const handleAnswer = async (optionIndex: number) => {
     if (!roundId || answered) return
     setAnswered(true)
-    const res = await callMiniApi<{ correct: boolean; correct_option: number }>('/battle/answer', { round_id: roundId, selected_option: optionIndex })
-    if (res.ok) setFeedback({ correct: res.correct, correctOption: res.correct_option, selected: optionIndex })
+    const res = await callMiniApi<{ correct: boolean; correct_option: number; points_awarded?: number }>('/battle/answer', { round_id: roundId, selected_option: optionIndex })
+    if (res.ok) {
+      setFeedback({ correct: res.correct, correctOption: res.correct_option, selected: optionIndex })
+      if (res.correct && res.points_awarded) setPointToast({ points: res.points_awarded, key: Date.now() })
+    }
     pollRef.current = setTimeout(fetchNextRound, 1500)
   }
 
@@ -211,7 +250,8 @@ function MatchView({ matchId, onFinished }: { matchId: string; onFinished: (res:
   }
 
   return (
-    <div className="card p-5">
+    <div className="card relative p-5">
+      {pointToast && <PointToast points={pointToast.points} toastKey={pointToast.key} />}
       <p className="mb-4 flex items-center gap-2 text-sm font-semibold text-primary-600"><Swords className="h-4 w-4" />Battle</p>
       <p className="mb-4 text-base font-semibold text-neutral-900">{question.question}</p>
       <div className="space-y-2">

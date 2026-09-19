@@ -372,18 +372,28 @@ async function finishBattleMatch(matchId: string, match: { player1_id: string; p
 
   await supabase.from("battle_matches").update({ status: "finished", winner_id: winnerId, finished_at: new Date().toISOString() }).eq("id", matchId);
 
+  let winPoints = 0;
+  let drawPoints = 0;
   if (winnerId) {
-    const winPoints = await getSetting("battle_win", 15);
+    winPoints = await getSetting("battle_win", 15);
     await supabase.from("points_history").insert({ pedagog_data_id: winnerId, source: "battle_win", source_id: matchId, points: winPoints });
   } else {
-    const drawPoints = await getSetting("battle_draw", 5);
+    drawPoints = await getSetting("battle_draw", 5);
     await supabase.from("points_history").insert([
       { pedagog_data_id: match.player1_id, source: "battle_draw", source_id: matchId, points: drawPoints },
       { pedagog_data_id: match.player2_id, source: "battle_draw", source_id: matchId, points: drawPoints },
     ]);
   }
 
-  return json({ ok: true, finished: true, winner_id: winnerId, player1: { id: match.player1_id, ...p1 }, player2: { id: match.player2_id, ...p2 } });
+  return json({
+    ok: true,
+    finished: true,
+    winner_id: winnerId,
+    win_points: winPoints,
+    draw_points: drawPoints,
+    player1: { id: match.player1_id, ...p1 },
+    player2: { id: match.player2_id, ...p2 },
+  });
 }
 
 Deno.serve(async (req: Request) => {
