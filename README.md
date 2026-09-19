@@ -56,6 +56,16 @@ supabase/
 
 `supabase/migrations/` papkasidagi fayllarni tartib bilan qo'llang (Supabase CLI: `supabase db push`, yoki SQL Editor orqali qo'lda).
 
+### Mini App'ni joylashtirish (deploy)
+
+Telegram Mini App — bu shunchaki `web_app` tugmasi bosilganda Telegram ichida ochiladigan **oddiy veb-sahifa**. U avtomatik "botda ko'rinib qolmaydi" — ochiq (public) HTTPS manzilda turishi shart, xuddi oddiy sayt kabi:
+
+1. `npm run build` — `dist/` papkasini yaratadi (bu — butun ilova: ochiq sahifa yo'q, faqat admin panel va Mini App, `/admin` va `/` yo'llari orqali ajratiladi)
+2. `dist/` papkasini statik hosting'ga yuklang (Netlify, Cloudflare Pages, Vercel — istalgani mos, faqat HTTPS bo'lishi shart)
+3. Shu domenni (masalan `https://it-teachers-namangan.netlify.app`) `MINIAPP_URL` sifatida quyida sozlang
+
+> Agar `MINIAPP_URL` sozlanmagan bo'lsa, bot Mini App tugmasini umuman ko'rsatmaydi (avvalgi versiyada bu yerda noto'g'ri standart qiymat — `miniapp-api` funksiyasining o'zi — bor edi, u faqat JSON qaytaradi, HTML sahifa emas, shuning uchun olib tashlandi).
+
 ### Edge Functions sozlamalari
 
 ```bash
@@ -64,10 +74,11 @@ supabase secrets set \
   TELEGRAM_WEBHOOK_SECRET=<o'zingiz tanlagan uzun tasodifiy matn> \
   ADMIN_TELEGRAM_ID=<adminning Telegram ID raqami> \
   ADMIN_USERNAME=<adminning Telegram @username, ixtiyoriy> \
-  TASK_GROUP_URL=<topshiriqlar bajariladigan Telegram guruh havolasi>
+  TASK_GROUP_URL=<topshiriqlar bajariladigan Telegram guruh havolasi> \
+  MINIAPP_URL=<Mini App joylashtirilgan ochiq HTTPS manzil>
 ```
 
-> `TELEGRAM_WEBHOOK_SECRET` va `ADMIN_TELEGRAM_ID` sozlanmasa, bot xavfsizlik sababli ishlamaydi (fail-closed).
+> `TELEGRAM_WEBHOOK_SECRET` va `ADMIN_TELEGRAM_ID` sozlanmasa, bot xavfsizlik sababli ishlamaydi (fail-closed). `MINIAPP_URL` sozlanmasa, bot ishlaydi, lekin "Mini App ni ochish" tugmasi hech qayerda ko'rinmaydi.
 
 Funksiyalarni deploy qiling:
 

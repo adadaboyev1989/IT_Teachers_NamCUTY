@@ -11,7 +11,13 @@ const TASK_GROUP_URL = Deno.env.get("TASK_GROUP_URL") || "";
 const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const MINIAPP_URL = Deno.env.get("MINIAPP_URL") || `${SUPABASE_URL}/functions/v1/miniapp-api`;
+// No fallback default: MINIAPP_URL must be the public HTTPS URL where the
+// built Mini App frontend (the src/miniapp React app, not the miniapp-api
+// backend — that only returns JSON, never an HTML page) is hosted. Every
+// place that would show a Mini App button checks MINIAPP_URL first and
+// simply omits the button if it's unset, rather than pointing Telegram at
+// a URL that can't render as a WebApp.
+const MINIAPP_URL = Deno.env.get("MINIAPP_URL") || "";
 
 // Shared secret Telegram echoes back in the X-Telegram-Bot-Api-Secret-Token
 // header on every webhook call. Without checking it, anyone who finds this
@@ -86,7 +92,8 @@ async function saveMessage(direction: string, senderId: number, recipientId: num
   });
 }
 
-function miniAppKeyboard(label = "📱 Mini App ni ochish"): InlineKeyboard {
+function miniAppKeyboard(label = "📱 Mini App ni ochish"): InlineKeyboard | undefined {
+  if (!MINIAPP_URL) return undefined;
   return new InlineKeyboard().webApp(label, MINIAPP_URL);
 }
 
@@ -214,12 +221,9 @@ bot.on("message:text", async (ctx) => {
   }
 
   if (user.telegram_id === ADMIN_TELEGRAM_ID) {
-    await ctx.reply("Assalomu alaykum, Admin! 👑", {
-      reply_markup: new InlineKeyboard()
-        .text("📢 Barcha foydalanuvchilarga xabar yuborish", "broadcast")
-        .row()
-        .webApp("📱 Mini App ni ochish", MINIAPP_URL),
-    });
+    const adminKeyboard = new InlineKeyboard().text("📢 Barcha foydalanuvchilarga xabar yuborish", "broadcast");
+    if (MINIAPP_URL) adminKeyboard.row().webApp("📱 Mini App ni ochish", MINIAPP_URL);
+    await ctx.reply("Assalomu alaykum, Admin! 👑", { reply_markup: adminKeyboard });
     return;
   }
 
@@ -300,11 +304,14 @@ Deno.serve(async (req: Request) => {
 
     if (url.searchParams.get("setWebhook") === "true") {
       const webhookUrl = `${SUPABASE_URL}/functions/v1/telegram-bot`;
-      const result = await bot.api.setWebhook(webhookUrl, { secret_token: WEBHOOK_SECRET || undefined });
-      await bot.api.setChatMenuButton({ menu_button: { type: "web_app", text: "Mini App", web_app: { url: MINIAPP_URL } } });
-      return new Response(JSON.stringify(result), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const webhookSet = await bot.api.setWebhook(webhookUrl, { secret_token: WEBHOOK_SECRET || undefined });
+      if (MINIAPP_URL) await bot.api.setChatMenuButton({ menu_button: { type: "web_app", text: "Mini App", web_app: { url: MINIAPP_URL } } });
+      return new Response(JSON.stringify({ webhookSet, miniAppMenuButtonSet: !!MINIAPP_URL }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     if (url.searchParams.get("setMenu") === "true") {
+      if (!MINIAPP_URL) {
+        return new Response(JSON.stringify({ ok: false, error: "MINIAPP_URL not configured" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       await bot.api.setChatMenuButton({ menu_button: { type: "web_app", text: "Mini App", web_app: { url: MINIAPP_URL } } });
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
