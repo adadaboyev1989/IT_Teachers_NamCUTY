@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import type { PedagogData, PedagogCategory } from '../types'
-import { Trash2, Edit3, Upload, Download, FileSpreadsheet, X, Loader2, Clock } from 'lucide-react'
+import { Trash2, Edit3, Upload, Download, FileSpreadsheet, X, Loader2, Clock, Award } from 'lucide-react'
 import { SectionHeader, SearchBar, LoadingSpinner, EmptyState, Modal, FormField, ErrorBox, FormActions } from './shared'
 
 const categories: PedagogCategory[] = ['Oliy', 'Birinchi', 'Ikkinchi', 'Mutaxassis']
@@ -11,6 +11,13 @@ const categoryColors: Record<string, string> = {
   Birinchi: 'bg-primary-50 text-primary-700',
   Ikkinchi: 'bg-amber-50 text-amber-700',
   Mutaxassis: 'bg-cyan-50 text-cyan-700',
+}
+
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '—'
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('uz-UZ', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }
 
 export function AdminPedagog() {
@@ -42,11 +49,17 @@ export function AdminPedagog() {
   const handleDownloadTemplate = async () => {
     const XLSX = await import('xlsx')
     const template = [
-      { FIO: 'Ali Valiyev', Maktabi: 'Namangan 1-maktab', JSHSHIR: '12345678901234', "Tug'ilgan sanasi": '1985-03-15', Toifasi: 'Oliy', 'Dars soati': 18 },
-      { FIO: 'Vali Aliyev', Maktabi: 'Namangan 2-maktab', JSHSHIR: '98765432109876', "Tug'ilgan sanasi": '1990-07-20', Toifasi: 'Birinchi', 'Dars soati': 12 },
+      {
+        FIO: 'Ali Valiyev', Maktabi: 'Namangan 1-maktab', JSHSHIR: '12345678901234', "Tug'ilgan sanasi": '1985-03-15', Toifasi: 'Oliy', 'Dars soati': 18,
+        'Sertifikat nomi': 'Microsoft Certified Educator', 'Sertifikat sanasi': '2023-06-01', 'Sertifikat tugash sanasi': '2026-06-01',
+      },
+      {
+        FIO: 'Vali Aliyev', Maktabi: 'Namangan 2-maktab', JSHSHIR: '98765432109876', "Tug'ilgan sanasi": '1990-07-20', Toifasi: 'Birinchi', 'Dars soati': 12,
+        'Sertifikat nomi': '', 'Sertifikat sanasi': '', 'Sertifikat tugash sanasi': '',
+      },
     ]
     const ws = XLSX.utils.json_to_sheet(template)
-    ws['!cols'] = [{ wch: 25 }, { wch: 25 }, { wch: 18 }, { wch: 16 }, { wch: 12 }, { wch: 10 }]
+    ws['!cols'] = [{ wch: 25 }, { wch: 25 }, { wch: 18 }, { wch: 16 }, { wch: 12 }, { wch: 10 }, { wch: 30 }, { wch: 18 }, { wch: 22 }]
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Pedagoglar')
     XLSX.writeFile(wb, 'pedagog_namuna.xlsx')
@@ -62,6 +75,9 @@ export function AdminPedagog() {
       "Tug'ilgan sanasi": d.birth_date || '',
       Toifasi: d.category,
       'Dars soati': d.lesson_hours,
+      'Sertifikat nomi': d.certificate_name || '',
+      'Sertifikat sanasi': d.certificate_issue_date || '',
+      'Sertifikat tugash sanasi': d.certificate_expiry_date || '',
     }))
     const ws = XLSX.utils.json_to_sheet(exportData)
     const wb = XLSX.utils.book_new()
@@ -109,6 +125,9 @@ export function AdminPedagog() {
           birth_date: getVal(["Tug'ilgan sanasi", 'Tugilgan sanasi', 'Birth date']) || null,
           category: validCategory,
           lesson_hours: parseInt(getVal(['Dars soati', 'Dars soat', 'Lesson hours'])) || 0,
+          certificate_name: getVal(['Sertifikat nomi', 'Certificate name']) || null,
+          certificate_issue_date: getVal(['Sertifikat sanasi', 'Sertifikat olingan sana', 'Certificate issue date']) || null,
+          certificate_expiry_date: getVal(['Sertifikat tugash sanasi', 'Certificate expiry date']) || null,
         }
       }).filter((r) => r.full_name !== "Noma'lum" && r.school !== "Noma'lum")
 
@@ -181,6 +200,7 @@ export function AdminPedagog() {
                   <th className="hidden px-4 py-3 font-semibold text-neutral-700 lg:table-cell">JSHSHIR</th>
                   <th className="hidden px-4 py-3 font-semibold text-neutral-700 sm:table-cell">Toifa</th>
                   <th className="hidden px-4 py-3 font-semibold text-neutral-700 lg:table-cell">Dars soati</th>
+                  <th className="hidden px-4 py-3 font-semibold text-neutral-700 xl:table-cell">Sertifikat</th>
                   <th className="px-4 py-3 text-right font-semibold text-neutral-700">Amallar</th>
                 </tr>
               </thead>
@@ -196,6 +216,14 @@ export function AdminPedagog() {
                     <td className="hidden px-4 py-3 font-mono text-xs text-neutral-500 lg:table-cell">{p.pinfl || '—'}</td>
                     <td className="hidden px-4 py-3 sm:table-cell"><span className={`badge ${categoryColors[p.category] || 'bg-neutral-100 text-neutral-600'}`}>{p.category}</span></td>
                     <td className="hidden px-4 py-3 text-neutral-600 lg:table-cell"><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5 text-neutral-400" />{p.lesson_hours} soat</span></td>
+                    <td className="hidden px-4 py-3 xl:table-cell">
+                      {p.certificate_name ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-neutral-700"><Award className="h-3.5 w-3.5 text-amber-500" />{p.certificate_name}</span>
+                          <span className="text-xs text-neutral-400">{formatDate(p.certificate_issue_date)} — {formatDate(p.certificate_expiry_date)}</span>
+                        </div>
+                      ) : <span className="text-xs text-neutral-400">—</span>}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => { setEditing(p); setShowForm(true) }} className="rounded-lg p-1.5 text-neutral-400 transition-all hover:bg-primary-50 hover:text-primary-600"><Edit3 className="h-4 w-4" /></button>
@@ -222,6 +250,9 @@ function PedagogForm({ pedagog, onClose, onSuccess }: { pedagog: PedagogData | n
   const [birthDate, setBirthDate] = useState(pedagog?.birth_date ? pedagog.birth_date.slice(0, 10) : '')
   const [category, setCategory] = useState<PedagogCategory>(categories.includes(pedagog?.category as PedagogCategory) ? (pedagog?.category as PedagogCategory) : 'Mutaxassis')
   const [lessonHours, setLessonHours] = useState(pedagog?.lesson_hours?.toString() || '0')
+  const [certName, setCertName] = useState(pedagog?.certificate_name || '')
+  const [certIssue, setCertIssue] = useState(pedagog?.certificate_issue_date ? pedagog.certificate_issue_date.slice(0, 10) : '')
+  const [certExpiry, setCertExpiry] = useState(pedagog?.certificate_expiry_date ? pedagog.certificate_expiry_date.slice(0, 10) : '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -246,6 +277,9 @@ function PedagogForm({ pedagog, onClose, onSuccess }: { pedagog: PedagogData | n
       birth_date: birthDate || null,
       category,
       lesson_hours: parseInt(lessonHours) || 0,
+      certificate_name: certName.trim() || null,
+      certificate_issue_date: certIssue || null,
+      certificate_expiry_date: certExpiry || null,
     }
 
     const { error: upsertError } = pedagog
@@ -278,6 +312,18 @@ function PedagogForm({ pedagog, onClose, onSuccess }: { pedagog: PedagogData | n
           </FormField>
           <FormField label="Dars soati"><input type="number" value={lessonHours} onChange={(e) => setLessonHours(e.target.value)} className="input-field" min={0} /></FormField>
         </div>
+
+        <div className="border-t border-neutral-100 pt-4">
+          <p className="mb-3 text-sm font-semibold text-neutral-700">Xalqaro sertifikat (majburiy emas)</p>
+          <FormField label="Sertifikat nomi">
+            <input type="text" value={certName} onChange={(e) => setCertName(e.target.value)} className="input-field" placeholder="IELTS, Microsoft Certified Educator va h.k." />
+          </FormField>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <FormField label="Berilgan sanasi"><input type="date" value={certIssue} onChange={(e) => setCertIssue(e.target.value)} className="input-field" /></FormField>
+            <FormField label="Tugash sanasi"><input type="date" value={certExpiry} onChange={(e) => setCertExpiry(e.target.value)} className="input-field" /></FormField>
+          </div>
+        </div>
+
         {error && <ErrorBox message={error} />}
         <FormActions onClose={onClose} saving={saving} saveLabel={pedagog ? 'Saqlash' : "Qo'shish"} />
       </form>
