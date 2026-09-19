@@ -20,6 +20,10 @@ export type LeaderboardRow = {
   school: string
   category: PedagogCategory
   category_points: number
+  certificate_points: number
+  quest_points: number
+  battle_points: number
+  task_points: number
   activity_points: number
   total_points: number
 }

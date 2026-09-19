@@ -25,6 +25,7 @@ type Pedagog = {
   full_name: string;
   school: string;
   category: string;
+  certificate_name: string | null;
 };
 
 // Verifies initData and resolves it to a registered teacher's pedagog_data
@@ -41,7 +42,7 @@ async function resolveTeacher(initData: unknown): Promise<{ pedagog: Pedagog } |
     return { error: "Ro'yxatdan o'tmagansiz. Iltimos, botda /start bosing.", status: 403 };
   }
 
-  const { data: pedagog } = await supabase.from("pedagog_data").select("id, full_name, school, category").eq("id", botUser.pedagog_data_id).maybeSingle();
+  const { data: pedagog } = await supabase.from("pedagog_data").select("id, full_name, school, category, certificate_name").eq("id", botUser.pedagog_data_id).maybeSingle();
   if (!pedagog) return { error: "Pedagog ma'lumotlari topilmadi", status: 404 };
 
   return { pedagog };
@@ -66,6 +67,12 @@ async function handleProfile(pedagog: Pedagog) {
       full_name: pedagog.full_name,
       school: pedagog.school,
       category: pedagog.category,
+      has_certificate: !!pedagog.certificate_name,
+      category_points: me?.category_points ?? 0,
+      certificate_points: me?.certificate_points ?? 0,
+      quest_points: me?.quest_points ?? 0,
+      battle_points: me?.battle_points ?? 0,
+      task_points: me?.task_points ?? 0,
       total_points: me?.total_points ?? 0,
       rank: rank || null,
       total_teachers: (board || []).length,

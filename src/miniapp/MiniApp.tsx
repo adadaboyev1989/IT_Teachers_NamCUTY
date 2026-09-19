@@ -12,6 +12,12 @@ export type Profile = {
   full_name: string
   school: string
   category: string
+  has_certificate: boolean
+  category_points: number
+  certificate_points: number
+  quest_points: number
+  battle_points: number
+  task_points: number
   total_points: number
   rank: number | null
   total_teachers: number
