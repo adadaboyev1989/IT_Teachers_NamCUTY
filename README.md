@@ -6,8 +6,9 @@ Namangan shahridagi IT/informatika o'qituvchilari uchun Telegram bot + Mini App 
 
 - **Telegram bot** — foydalanuvchini ro'yxatdan o'tkazadi: telefon raqami + JSHSHIR (PINFL) so'raydi, admin oldindan kiritgan pedagog ma'lumotlari bilan solishtiradi
 - **Mini App** — profil, reyting jadvali, ko'p bosqichli quest (escape room), onlayn o'qituvchilar bilan jonli battle
-- **Admin panel** — pedagoglar (Excel import/eksport), quest bosqichlari/savollari, battle savollar banki, reyting ball qiymatlari, topshiriqlar
+- **Admin panel** — pedagoglar (Excel import/eksport), quest bosqichlari/savollari, battle savollar banki, reyting ball qiymatlari, topshiriqlar, yutuqlar
 - **Topshiriqlar** — admin panelda yaratiladi, bot orqali e'lon qilinadi, lekin bajarilishi **alohida Telegram guruhda** amalga oshiriladi; admin faqat "bajardi" belgisini qo'yadi, ball avtomatik qo'shiladi
+- **Yutuqlar** — admin panelda alohida bo'lim: olimpiada, viloyat yoki respublika ko'rik-tanlovlaridagi g'oliblik uchun har bir pedagogga individual ball beriladi (tanlov nomi va ball qiymati admin tomonidan erkin kiritiladi)
 
 ## Texnologik stek
 
@@ -38,7 +39,7 @@ npm run preview   # build natijasini lokal ko'rish
 
 ```
 src/
-  admin/          — admin panel (Pedagoglar, Quest, Battle, Reyting, Topshiriqlar)
+  admin/          — admin panel (Pedagoglar, Quest, Battle, Reyting, Topshiriqlar, Yutuqlar)
   miniapp/        — Mini App (Profil, Reyting, Quest, Battle)
   lib/            — Supabase client, umumiy tiplar
 supabase/
@@ -98,7 +99,7 @@ https://<loyiha-ref>.supabase.co/functions/v1/telegram-bot?setWebhook=true&secre
 
 Admin panelga kirish uchun Supabase Auth orqali foydalanuvchi (email/parol) yaratilgan bo'lishi kerak — **Authentication → Users** bo'limida qo'lda qo'shing. Ro'yxatdan o'tish formasi yo'q, faqat kirish.
 
-> Eslatma: barcha boshqaruv jadvallarida (`pedagog_data`, `quest_*`, `battle_questions`, `tasks`, `task_completions`, `rating_settings`) yozish huquqi har qanday `authenticated` foydalanuvchiga berilgan — alohida "admin" roli yo'q. Supabase loyihangizda **ochiq ro'yxatdan o'tish o'chirilganligini** tekshirib qo'ying.
+> Eslatma: barcha boshqaruv jadvallarida (`pedagog_data`, `quest_*`, `battle_questions`, `tasks`, `task_completions`, `achievements`, `rating_settings`) yozish huquqi har qanday `authenticated` foydalanuvchiga berilgan — alohida "admin" roli yo'q. Supabase loyihangizda **ochiq ro'yxatdan o'tish o'chirilganligini** tekshirib qo'ying.
 
 ## Xavfsizlik arxitekturasi (qisqacha)
 

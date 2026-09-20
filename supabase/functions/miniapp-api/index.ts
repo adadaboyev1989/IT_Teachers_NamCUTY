@@ -96,6 +96,7 @@ async function handleProfile(pedagog: Pedagog) {
       quest_points: me?.quest_points ?? 0,
       battle_points: me?.battle_points ?? 0,
       task_points: me?.task_points ?? 0,
+      achievement_points: me?.achievement_points ?? 0,
       total_points: me?.total_points ?? 0,
       rank: rank || null,
       total_teachers: (board || []).length,

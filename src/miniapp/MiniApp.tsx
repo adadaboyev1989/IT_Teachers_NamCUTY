@@ -29,6 +29,7 @@ export type Profile = {
   quest_points: number
   battle_points: number
   task_points: number
+  achievement_points: number
   total_points: number
   rank: number | null
   total_teachers: number

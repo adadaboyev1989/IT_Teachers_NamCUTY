@@ -24,6 +24,7 @@ export type LeaderboardRow = {
   quest_points: number
   battle_points: number
   task_points: number
+  achievement_points: number
   activity_points: number
   total_points: number
 }
@@ -82,6 +83,15 @@ export type TaskCompletion = {
   completed_at: string | null
 }
 
+export type Achievement = {
+  id: string
+  pedagog_data_id: string
+  title: string
+  points: number
+  awarded_at: string
+  created_at: string
+}
+
 export type BotUser = {
   telegram_id: number
   telegram_username: string | null
@@ -95,4 +105,4 @@ export type BotUser = {
   last_seen_at: string | null
 }
 
-export type AdminTabId = 'pedagog' | 'quest' | 'battle' | 'rating' | 'tasks' | 'bot-status'
+export type AdminTabId = 'pedagog' | 'quest' | 'battle' | 'rating' | 'tasks' | 'achievements' | 'bot-status'

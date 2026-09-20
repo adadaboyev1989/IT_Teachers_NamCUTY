@@ -1,4 +1,4 @@
-import { GraduationCap, Star, Award, Puzzle, Swords, ClipboardCheck, BadgeCheck, AlertTriangle, Clock, Calendar } from 'lucide-react'
+import { GraduationCap, Star, Award, Puzzle, Swords, ClipboardCheck, BadgeCheck, Medal, AlertTriangle, Clock, Calendar } from 'lucide-react'
 import type { Profile } from './MiniApp'
 
 const categoryColors: Record<string, string> = {
@@ -31,6 +31,7 @@ export function ProfileTab({ profile }: { profile: Profile }) {
     { icon: Puzzle, label: "Quest (o'yinlar)", points: profile.quest_points },
     { icon: Swords, label: 'Battle', points: profile.battle_points },
     { icon: ClipboardCheck, label: 'Topshiriqlar', points: profile.task_points },
+    { icon: Medal, label: 'Yutuqlar', points: profile.achievement_points },
   ]
 
   return (

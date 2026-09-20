@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GraduationCap, Users, Puzzle, Swords, Trophy, ClipboardList, Bot, LogOut } from 'lucide-react'
+import { GraduationCap, Users, Puzzle, Swords, Trophy, ClipboardList, Medal, Bot, LogOut } from 'lucide-react'
 import type { AdminTabId } from '../types'
 import { supabase } from '../lib/supabase'
 import { AdminPedagog } from './AdminPedagog'
@@ -7,6 +7,7 @@ import { AdminQuest } from './AdminQuest'
 import { AdminBattle } from './AdminBattle'
 import { AdminRatingSettings } from './AdminRatingSettings'
 import { AdminTasks } from './AdminTasks'
+import { AdminAchievements } from './AdminAchievements'
 import { AdminBotStatus } from './AdminBotStatus'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -18,6 +19,7 @@ const tabs: { id: AdminTabId; label: string; icon: typeof Users }[] = [
   { id: 'battle', label: 'Battle', icon: Swords },
   { id: 'rating', label: 'Reyting', icon: Trophy },
   { id: 'tasks', label: 'Topshiriqlar', icon: ClipboardList },
+  { id: 'achievements', label: 'Yutuqlar', icon: Medal },
   { id: 'bot-status', label: 'Bot holati', icon: Bot },
 ]
 
@@ -78,6 +80,7 @@ export function AdminLayout({ onLogout }: Props) {
           {activeTab === 'battle' && <AdminBattle />}
           {activeTab === 'rating' && <AdminRatingSettings />}
           {activeTab === 'tasks' && <AdminTasks />}
+          {activeTab === 'achievements' && <AdminAchievements />}
           {activeTab === 'bot-status' && <AdminBotStatus />}
         </div>
       </div>
