@@ -2,6 +2,8 @@
 
 Namangan shahridagi IT/informatika o'qituvchilari uchun Telegram bot + Mini App + admin panel: JSHSHIR orqali identifikatsiya, reyting tizimi, escape-room uslubidagi quest o'yini, onlayn 1v1 battle va admin tomonidan beriladigan topshiriqlar.
 
+> Loyihani Supabase + Netlify'ga bosqichma-bosqich joylashtirish uchun **[DEPLOY.md](./DEPLOY.md)** ga qarang.
+
 ## Tarkibi
 
 - **Telegram bot** — foydalanuvchini ro'yxatdan o'tkazadi: telefon raqami + JSHSHIR (PINFL) so'raydi, admin oldindan kiritgan pedagog ma'lumotlari bilan solishtiradi
