@@ -32,7 +32,10 @@ supabase db push
 
 Bu `supabase/migrations/` papkasidagi barcha SQL fayllarni sana tartibida
 bazaga qo'llaydi (jadvallar, RLS siyosatlari, ball berish trigerlari,
-`leaderboard` view).
+`leaderboard` view). Shu migratsiyalar orasida bazaning vaqt mintaqasini
+O'zbekiston vaqtiga (`Asia/Tashkent`, UTC+5) sozlash ham bor — sana bilan
+bog'liq barcha hisob-kitoblar (masalan, tug'ilgan kun tekshiruvi) shu asosda
+ishlaydi.
 
 **Muqobil yo'l (CLI'siz):** Supabase Dashboard → **SQL Editor** → har bir
 migration faylining tarkibini fayl nomidagi sanaga qarab, eng eskisidan
@@ -125,6 +128,28 @@ Javobda `{"webhookSet":true,"miniAppMenuButtonSet":true}` ko'rinishi kerak.
 
 ---
 
+## 7.5-qadam. Tug'ilgan kun tabrigi uchun kundalik trigger (ixtiyoriy)
+
+O'qituvchilarni tug'ilgan kunlarida avtomatik tabriklash uchun quyidagi
+manzilni **har kuni bir marta** chaqiradigan trigger kerak (Deno Edge
+Function'larning o'zida cron yo'q, tashqaridan chaqirilishi shart):
+
+```
+https://<loyiha-ref>.supabase.co/functions/v1/telegram-bot?birthdayCheck=true&secret=<TELEGRAM_WEBHOOK_SECRET>
+```
+
+Buni sozlashning eng oson yo'li — Supabase Dashboard → **Database → Cron
+Jobs** → **Create a new cron job** → turi **HTTP Request**, yuqoridagi
+manzilga GET so'rov, jadval masalan `0 3 * * *` (bu UTC 03:00 — Toshkent
+vaqti bilan ertalab soat 08:00). Muqobil sifatida istalgan bepul tashqi cron
+xizmatidan ([cron-job.org](https://cron-job.org) va h.k.) ham foydalanish
+mumkin.
+
+> Bu sozlanmasa, hech narsa buzilmaydi — shunchaki tug'ilgan kun tabriklari
+> yuborilmaydi.
+
+---
+
 ## 8-qadam. Tekshirish
 
 - [ ] Admin panel: `https://<netlify-manzil>/admin` ochiladi, email/parol bilan kirish ishlaydi
@@ -132,6 +157,7 @@ Javobda `{"webhookSet":true,"miniAppMenuButtonSet":true}` ko'rinishi kerak.
 - [ ] Botga Telegram'da `/start` bosilganda javob keladi
 - [ ] Telefon + JSHSHIR orqali ro'yxatdan o'tish ishlaydi (admin qo'shgan pedagog bilan mos kelishi kerak)
 - [ ] "Mini App ni ochish" tugmasi ko'rinadi va bosilganda profil ochiladi
+- [ ] (Ixtiyoriy) `birthdayCheck` manzilini brauzerda qo'lda ochib, javobda `{"ok":true,"sent":N}` kelishini tekshiring
 
 ---
 

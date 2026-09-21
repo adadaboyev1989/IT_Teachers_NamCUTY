@@ -11,6 +11,8 @@ Namangan shahridagi IT/informatika o'qituvchilari uchun Telegram bot + Mini App 
 - **Admin panel** — pedagoglar (Excel import/eksport), quest bosqichlari/savollari, battle savollar banki, reyting ball qiymatlari, topshiriqlar, yutuqlar
 - **Topshiriqlar** — admin panelda yaratiladi, bot orqali e'lon qilinadi, lekin bajarilishi **alohida Telegram guruhda** amalga oshiriladi; admin faqat "bajardi" belgisini qo'yadi, ball avtomatik qo'shiladi
 - **Yutuqlar** — admin panelda alohida bo'lim: olimpiada, viloyat yoki respublika ko'rik-tanlovlaridagi g'oliblik uchun har bir pedagogga individual ball beriladi (tanlov nomi va ball qiymati admin tomonidan erkin kiritiladi)
+- **Tug'ilgan kun tabrigi** — har kuni bir marta tekshirilib (kundalik tashqi trigger orqali, [DEPLOY.md](./DEPLOY.md) ga qarang), shu kuni tug'ilgan kuni bo'lgan, botdan foydalanuvchi o'qituvchilarga avtomatik tabrik xabari yuboriladi
+- **Vaqt mintaqasi** — loyiha O'zbekiston vaqtiga (`Asia/Tashkent`, UTC+5) sozlangan — bazadagi hisob-kitoblar va interfeysdagi barcha sanalar shu asosda ko'rsatiladi
 
 ## Texnologik stek
 

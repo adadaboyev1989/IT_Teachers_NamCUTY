@@ -11,6 +11,7 @@ export type PedagogData = {
   certificate_name: string | null
   certificate_issue_date: string | null
   certificate_expiry_date: string | null
+  last_birthday_greeted_year: number | null
   created_at: string
 }
 

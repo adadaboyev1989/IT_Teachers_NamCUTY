@@ -5,7 +5,7 @@ import { Trash2, Edit3, Medal } from 'lucide-react'
 import { SectionHeader, SearchBar, LoadingSpinner, EmptyState, Modal, FormField, ErrorBox, FormActions } from './shared'
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('uz-UZ', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  return new Date(dateStr).toLocaleDateString('uz-UZ', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Tashkent' })
 }
 
 export function AdminAchievements() {

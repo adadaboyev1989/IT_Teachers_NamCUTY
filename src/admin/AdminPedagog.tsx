@@ -17,7 +17,7 @@ function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—'
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return '—'
-  return d.toLocaleDateString('uz-UZ', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  return d.toLocaleDateString('uz-UZ', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Tashkent' })
 }
 
 // Same 30-day warning window as miniapp-api's certificateStatus() — kept in

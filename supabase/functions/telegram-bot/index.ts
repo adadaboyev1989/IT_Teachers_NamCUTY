@@ -293,6 +293,55 @@ export async function notifyTaskAnnouncement(title: string, points: number): Pro
   return await broadcastToUsers(`📝 <b>Yangi topshiriq!</b>\n\n${title}\n\n⭐ ${points} ball${groupLine}`);
 }
 
+// Meant to be hit once a day by an external scheduler (see the
+// `birthdayCheck` GET action below and DEPLOY.md) — Deno Edge Functions have
+// no built-in cron, so this can't fire itself. Compares against Asia/Tashkent
+// local time (not the server's UTC clock) so a birthday is matched on the
+// right calendar day for teachers here, not wherever the function happens to
+// run. `last_birthday_greeted_year` guards against double-sending if the
+// scheduler fires more than once on the same day.
+async function sendBirthdayGreetings(): Promise<number> {
+  const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tashkent", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const [todayYear, todayMonth, todayDay] = todayStr.split("-").map(Number);
+
+  const { data: pedagogs } = await supabase
+    .from("pedagog_data")
+    .select("id, full_name, birth_date, last_birthday_greeted_year")
+    .not("birth_date", "is", null);
+
+  const birthdayPeople = (pedagogs || []).filter((p) => {
+    const d = new Date(`${p.birth_date}T00:00:00Z`);
+    return d.getUTCMonth() + 1 === todayMonth && d.getUTCDate() === todayDay && p.last_birthday_greeted_year !== todayYear;
+  });
+  if (birthdayPeople.length === 0) return 0;
+
+  const { data: botUsers } = await supabase
+    .from("bot_users")
+    .select("telegram_id, pedagog_data_id")
+    .eq("is_registered", true)
+    .in("pedagog_data_id", birthdayPeople.map((p) => p.id));
+  const telegramIdByPedagogId = new Map((botUsers || []).map((u) => [u.pedagog_data_id as string, u.telegram_id]));
+
+  let sent = 0;
+  for (const p of birthdayPeople) {
+    const telegramId = telegramIdByPedagogId.get(p.id);
+    if (!telegramId) continue; // Not registered with the bot yet — nothing to send to.
+    try {
+      await bot.api.sendMessage(
+        telegramId,
+        `🎉🎂 <b>Tug'ilgan kuningiz muborak, ${p.full_name}!</b>\n\nSizga mustahkam sog'liq, oilaviy baxt va yangi pedagogik yutuqlar tilaymiz! 🎈`,
+        { parse_mode: "HTML" }
+      );
+      sent++;
+    } catch {
+      // Blocked the bot or otherwise unreachable — still mark as greeted
+      // below so we don't retry them every day for the rest of the year.
+    }
+    await supabase.from("pedagog_data").update({ last_birthday_greeted_year: todayYear }).eq("id", p.id);
+  }
+  return sent;
+}
+
 const handleUpdate = webhookCallback(bot, "std/http");
 
 Deno.serve(async (req: Request) => {
@@ -309,7 +358,7 @@ Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
 
   if (req.method === "GET") {
-    const isSetupCall = ["setWebhook", "setMenu", "webhookInfo", "getMe", "testMessage"].some((p) => url.searchParams.get(p) === "true");
+    const isSetupCall = ["setWebhook", "setMenu", "webhookInfo", "getMe", "testMessage", "birthdayCheck"].some((p) => url.searchParams.get(p) === "true");
 
     // One-time developer setup/debug actions — gated behind the same shared
     // secret as the webhook itself, since they can hijack the webhook or
@@ -350,6 +399,10 @@ Deno.serve(async (req: Request) => {
       }
       await bot.api.sendMessage(ADMIN_TELEGRAM_ID, "🧪 <b>Test xabar</b>\n\nBot muvaffaqiyatli ishlayapti!", { parse_mode: "HTML" });
       return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (url.searchParams.get("birthdayCheck") === "true") {
+      const sent = await sendBirthdayGreetings();
+      return new Response(JSON.stringify({ ok: true, sent }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     return new Response(JSON.stringify({ status: "bot running" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
