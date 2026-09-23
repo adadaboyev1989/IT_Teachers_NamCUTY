@@ -108,16 +108,21 @@ async function handleProfile(pedagog: Pedagog) {
 
 async function handleQuestStages(pedagog: Pedagog) {
   const { data: stages } = await supabase.from("quest_stages").select("id, title, description, order_index, time_limit_seconds").eq("is_active", true).order("order_index");
-  const { data: progress } = await supabase.from("quest_progress").select("stage_id, status, score").eq("pedagog_data_id", pedagog.id);
+  const { data: progress } = await supabase.from("quest_progress").select("stage_id, status, score, locked_until").eq("pedagog_data_id", pedagog.id);
 
-  const progressByStage = new Map<string, { status: string; score: number }>((progress || []).map((p) => [p.stage_id, p]));
+  const progressByStage = new Map<string, { status: string; score: number; locked_until: string | null }>((progress || []).map((p) => [p.stage_id, p]));
   let previousCompleted = true;
 
   const result = (stages || []).map((stage) => {
     const p = progressByStage.get(stage.id);
     const status = p?.status || (previousCompleted ? "unlocked" : "locked");
+    // A wrong-answer lockout is separate from the sequential
+    // locked/unlocked/completed status above (this can happen to an
+    // "unlocked" — i.e. in-progress — stage too), and only counts while the
+    // timer hasn't actually expired yet.
+    const failLockedUntil = p?.locked_until && new Date(p.locked_until).getTime() > Date.now() ? p.locked_until : null;
     previousCompleted = p?.status === "completed";
-    return { ...stage, status, score: p?.score ?? 0 };
+    return { ...stage, status, score: p?.score ?? 0, locked_until: failLockedUntil };
   });
 
   return json({ ok: true, stages: result });
@@ -182,11 +187,58 @@ async function getOrCreateQuestSelection(pedagogId: string, stageId: string): Pr
   return selected;
 }
 
+// 3 wrong answers within one attempt at a stage locks it for 3 hours —
+// after that, the next attempt is a genuinely clean slate (see
+// resetQuestAttempt), not a resume.
+const QUEST_LIVES = 3;
+const QUEST_LOCK_HOURS = 3;
+
+type QuestProgressRow = { status: string; wrong_count: number; locked_until: string | null };
+
+// Wipes a failed attempt: its answers, the points those answers earned, and
+// its question selection — so the next getOrCreateQuestSelection() call
+// deals a brand new random 10, and previously-wrong (or even
+// previously-correct) questions in it become answerable again instead of
+// tripping the "already answered" unique constraint forever.
+async function resetQuestAttempt(pedagogId: string, stageId: string): Promise<void> {
+  const { data: oldSelection } = await supabase.from("quest_question_selections").select("question_id").eq("pedagog_data_id", pedagogId).eq("stage_id", stageId);
+  const oldQuestionIds = (oldSelection || []).map((s) => s.question_id);
+
+  if (oldQuestionIds.length > 0) {
+    await supabase.from("quest_answers").delete().eq("pedagog_data_id", pedagogId).in("question_id", oldQuestionIds);
+    await supabase.from("points_history").delete().eq("pedagog_data_id", pedagogId).eq("source", "quest_question").in("source_id", oldQuestionIds);
+  }
+  await supabase.from("quest_question_selections").delete().eq("pedagog_data_id", pedagogId).eq("stage_id", stageId);
+  await supabase.from("quest_progress").upsert(
+    { pedagog_data_id: pedagogId, stage_id: stageId, status: "in_progress", wrong_count: 0, locked_until: null },
+    { onConflict: "pedagog_data_id,stage_id" }
+  );
+}
+
+// Single chokepoint both quest routes go through: if a previous attempt's
+// lock has expired, resets it (fresh questions, 3 lives again) before
+// anything else runs — so it doesn't matter whether the client happens to
+// call /quest/questions or goes straight to /quest/answer first.
+async function getQuestProgressAfterExpiryCheck(pedagogId: string, stageId: string): Promise<QuestProgressRow | null> {
+  const { data: progress } = await supabase.from("quest_progress").select("status, wrong_count, locked_until").eq("pedagog_data_id", pedagogId).eq("stage_id", stageId).maybeSingle();
+  if (progress?.locked_until && new Date(progress.locked_until).getTime() <= Date.now()) {
+    await resetQuestAttempt(pedagogId, stageId);
+    return { status: "in_progress", wrong_count: 0, locked_until: null };
+  }
+  return progress;
+}
+
 async function handleQuestQuestions(pedagog: Pedagog, stageId: unknown) {
   if (typeof stageId !== "string") return json({ ok: false, error: "stage_id required" }, 400);
 
+  const progress = await getQuestProgressAfterExpiryCheck(pedagog.id, stageId);
+  if (progress?.locked_until) {
+    return json({ ok: true, locked: true, locked_until: progress.locked_until, lives_remaining: 0, questions: [] });
+  }
+
   const selectedIds = await getOrCreateQuestSelection(pedagog.id, stageId);
-  if (selectedIds.length === 0) return json({ ok: true, questions: [] });
+  const livesRemaining = QUEST_LIVES - (progress?.wrong_count ?? 0);
+  if (selectedIds.length === 0) return json({ ok: true, questions: [], lives_remaining: livesRemaining });
 
   const { data: questions } = await supabase.from("quest_questions").select("id, question, options, points, difficulty").in("id", selectedIds);
   const byId = new Map((questions || []).map((q) => [q.id, q]));
@@ -198,7 +250,7 @@ async function handleQuestQuestions(pedagog: Pedagog, stageId: unknown) {
     .map((id) => byId.get(id))
     .filter((q): q is NonNullable<typeof q> => !!q)
     .map((q) => ({ ...q, answer: answeredMap.get(q.id) || null }));
-  return json({ ok: true, questions: result });
+  return json({ ok: true, questions: result, lives_remaining: livesRemaining });
 }
 
 async function handleQuestAnswer(pedagog: Pedagog, questionId: unknown, selectedOption: unknown) {
@@ -208,6 +260,11 @@ async function handleQuestAnswer(pedagog: Pedagog, questionId: unknown, selected
 
   const { data: question } = await supabase.from("quest_questions").select("id, stage_id, correct_option, points").eq("id", questionId).maybeSingle();
   if (!question) return json({ ok: false, error: "Savol topilmadi" }, 404);
+
+  const progress = await getQuestProgressAfterExpiryCheck(pedagog.id, question.stage_id);
+  if (progress?.locked_until) {
+    return json({ ok: false, error: "Bu bosqich vaqtincha bloklangan", locked: true, locked_until: progress.locked_until }, 403);
+  }
 
   // The question bank can hold far more than 10 questions per stage — only
   // the 10 actually dealt to this teacher (getOrCreateQuestSelection) count
@@ -239,6 +296,29 @@ async function handleQuestAnswer(pedagog: Pedagog, questionId: unknown, selected
       source_id: question.id,
       points: pointsAwarded,
     });
+  }
+
+  // A wrong answer costs a life. The 3rd one locks this stage for 3 hours —
+  // short-circuit straight to the locked response rather than also
+  // evaluating stage completion below (a locked attempt is by definition
+  // not a completed one).
+  if (!isCorrect) {
+    const newWrongCount = (progress?.wrong_count ?? 0) + 1;
+    if (newWrongCount >= QUEST_LIVES) {
+      const lockedUntil = new Date(Date.now() + QUEST_LOCK_HOURS * 60 * 60 * 1000).toISOString();
+      await supabase.from("quest_progress").upsert(
+        { pedagog_data_id: pedagog.id, stage_id: question.stage_id, status: "in_progress", wrong_count: newWrongCount, locked_until: lockedUntil },
+        { onConflict: "pedagog_data_id,stage_id" }
+      );
+      return json({
+        ok: true, correct: false, correct_option: question.correct_option, points_awarded: 0,
+        stage_completed: false, bonus_awarded: 0, lives_remaining: 0, locked: true, locked_until: lockedUntil,
+      });
+    }
+    await supabase.from("quest_progress").upsert(
+      { pedagog_data_id: pedagog.id, stage_id: question.stage_id, status: "in_progress", wrong_count: newWrongCount },
+      { onConflict: "pedagog_data_id,stage_id" }
+    );
   }
 
   // Has every question in THIS TEACHER'S 10-question selection now been
@@ -282,14 +362,19 @@ async function handleQuestAnswer(pedagog: Pedagog, questionId: unknown, selected
       });
       stageCompleted = true;
     }
-  } else {
+  } else if (isCorrect) {
+    // Not locked (that branch already returned), not complete yet — just
+    // make sure the progress row exists / reads "in_progress" without
+    // touching wrong_count (that upsert already happened above for wrong
+    // answers that didn't trigger a lock).
     await supabase.from("quest_progress").upsert(
       { pedagog_data_id: pedagog.id, stage_id: question.stage_id, status: "in_progress" },
       { onConflict: "pedagog_data_id,stage_id" }
     );
   }
 
-  return json({ ok: true, correct: isCorrect, correct_option: question.correct_option, points_awarded: pointsAwarded, stage_completed: stageCompleted, bonus_awarded: bonusAwarded });
+  const livesRemaining = isCorrect ? QUEST_LIVES - (progress?.wrong_count ?? 0) : QUEST_LIVES - ((progress?.wrong_count ?? 0) + 1);
+  return json({ ok: true, correct: isCorrect, correct_option: question.correct_option, points_awarded: pointsAwarded, stage_completed: stageCompleted, bonus_awarded: bonusAwarded, lives_remaining: livesRemaining });
 }
 
 // --- Battle ---
