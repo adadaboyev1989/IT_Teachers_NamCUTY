@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import type { BattleQuestion } from '../types'
-import { Trash2, Edit3 } from 'lucide-react'
+import { Trash2, Edit3, Upload, FileSpreadsheet, Loader2, X } from 'lucide-react'
 import { SectionHeader, SearchBar, LoadingSpinner, EmptyState, Modal, FormField, ErrorBox, FormActions } from './shared'
 
 export function AdminBattle() {
@@ -10,6 +10,9 @@ export function AdminBattle() {
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<BattleQuestion | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchQuestions = useCallback(async () => {
     const { data, error } = await supabase.from('battle_questions').select('*').order('created_at', { ascending: false })
@@ -25,11 +28,108 @@ export function AdminBattle() {
     fetchQuestions()
   }
 
+  // xlsx is loaded on demand so its ~140KB doesn't ship in the initial admin
+  // panel bundle for admins who never import battle questions.
+  const handleDownloadTemplate = async () => {
+    const XLSX = await import('xlsx')
+    const template = [
+      { Savol: 'HTML nima uchun ishlatiladi?', 'Javob A': 'Sahifa tuzilishi', 'Javob B': 'Uslub berish', 'Javob C': 'Server mantiqi', 'Javob D': "Ma'lumotlar bazasi", "To'g'ri javob": 'A' },
+      { Savol: 'CSS nima uchun ishlatiladi?', 'Javob A': 'Tuzilma', 'Javob B': 'Uslublash', 'Javob C': 'Backend', 'Javob D': 'Baza', "To'g'ri javob": 'B' },
+    ]
+    const ws = XLSX.utils.json_to_sheet(template)
+    ws['!cols'] = [{ wch: 40 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 14 }]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Savollar')
+    XLSX.writeFile(wb, 'battle_savollar_namuna.xlsx')
+  }
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setImporting(true)
+    setImportMsg(null)
+
+    try {
+      const XLSX = await import('xlsx')
+      const arrayBuffer = await file.arrayBuffer()
+      const wb = XLSX.read(arrayBuffer, { type: 'array' })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws)
+
+      const getVal = (row: Record<string, unknown>, keys: string[]): string => {
+        for (const k of keys) {
+          for (const key of Object.keys(row)) {
+            if (key.toLowerCase().trim() === k.toLowerCase().trim()) {
+              const v = row[key]
+              if (v === undefined || v === null || v === '') return ''
+              return String(v).trim()
+            }
+          }
+        }
+        return ''
+      }
+
+      const questionRows = rows
+        .map((row) => {
+          const question = getVal(row, ['Savol', 'Question'])
+          const options = [
+            getVal(row, ['Javob A', 'Variant A', 'A']),
+            getVal(row, ['Javob B', 'Variant B', 'B']),
+            getVal(row, ['Javob C', 'Variant C', 'C']),
+            getVal(row, ['Javob D', 'Variant D', 'D']),
+          ]
+          const correctLetter = getVal(row, ["To'g'ri javob", "Togri javob", 'Correct answer']).toUpperCase()
+          const correctOption = ['A', 'B', 'C', 'D'].indexOf(correctLetter)
+
+          return { question, options, correct_option: correctOption, is_active: true }
+        })
+        .filter((r) => r.question && r.options.every((o) => o) && r.correct_option >= 0)
+
+      if (questionRows.length === 0) {
+        setImportMsg("Faylda hech qanday to'g'ri savol topilmadi. Har bir qatorda savol, 4 ta javob va to'g'ri javob (A/B/C/D) to'ldirilganini tekshiring.")
+        setImporting(false)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        return
+      }
+
+      const { error } = await supabase.from('battle_questions').insert(questionRows)
+
+      if (error) {
+        setImportMsg(`Import xatosi: ${error.message}`)
+      } else {
+        setImportMsg(`${questionRows.length} ta savol muvaffaqiyatli import qilindi!`)
+        fetchQuestions()
+      }
+    } catch {
+      setImportMsg("Faylni o'qib bo'lmadi. Excel formatini tekshiring.")
+    }
+
+    setImporting(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const filtered = questions.filter((q) => q.question.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div>
       <SectionHeader title="Battle savollar banki" subtitle="Onlayn o'qituvchilar o'rtasidagi jonli duel uchun savollar" onAdd={() => { setEditing(null); setShowForm(true) }} addLabel="Savol qo'shish" />
+
+      <div className="mb-5 flex flex-wrap gap-2">
+        <button onClick={() => fileInputRef.current?.click()} disabled={importing} className="btn-ghost">
+          {importing ? (<><Loader2 className="h-4 w-4 animate-spin" /> Import qilinmoqda...</>) : (<><Upload className="h-4 w-4" /> Excel import</>)}
+        </button>
+        <button onClick={handleDownloadTemplate} className="btn-ghost"><FileSpreadsheet className="h-4 w-4" />Namuna jadval</button>
+        <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="hidden" />
+      </div>
+
+      {importMsg && (
+        <div className={`mb-5 rounded-lg px-4 py-3 text-sm ${importMsg.includes('xatosi') || importMsg.includes('topilmadi') || importMsg.includes("o'qib") ? 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400'}`}>
+          {importMsg}
+          <button onClick={() => setImportMsg(null)} className="ml-3 text-current opacity-60 hover:opacity-100"><X className="inline h-3.5 w-3.5" /></button>
+        </div>
+      )}
+
       <SearchBar value={search} onChange={setSearch} placeholder="Savol bo'yicha qidirish..." />
 
       {loading ? (

@@ -409,17 +409,21 @@ async function handleBattleNextRound(pedagog: Pedagog, matchId: unknown) {
     return json({ ok: true, finished: true, winner_id: match.winner_id });
   }
 
-  const roundsCount = await getSetting("battle_rounds_count", 5);
+  const roundsCount = await getSetting("battle_rounds_count", 11);
 
-  const { data: rounds } = await supabase.from("battle_rounds").select("id, round_index, question_id").eq("match_id", matchId).order("round_index", { ascending: false }).limit(1);
+  const { data: rounds } = await supabase.from("battle_rounds").select("id, round_index, question_id, winner_id").eq("match_id", matchId).order("round_index", { ascending: false }).limit(1);
   const lastRound = (rounds || [])[0];
 
   if (lastRound) {
     const { data: answers } = await supabase.from("battle_answers").select("pedagog_data_id").eq("round_id", lastRound.id);
     const bothAnswered = (answers || []).length >= 2;
+    // A round is over the moment someone answers it correctly (they've won
+    // the race for that point) — no need to wait for the other player too.
+    // It's also over once both have answered wrong, since neither can score it.
+    const resolved = !!lastRound.winner_id || bothAnswered;
 
-    if (!bothAnswered) {
-      // Still mid-round — return the same round so both players stay in sync.
+    if (!resolved) {
+      // Still open — return the same round so both players stay in sync.
       const { data: q } = await supabase.from("battle_questions").select("id, question, options").eq("id", lastRound.question_id).single();
       return json({ ok: true, round_id: lastRound.id, round_index: lastRound.round_index, question: q });
     }
@@ -492,36 +496,36 @@ async function handleBattleAnswer(pedagog: Pedagog, roundId: unknown, selectedOp
     return json({ ok: false, error: "Xatolik yuz berdi" }, 500);
   }
 
+  // First correct answer wins the round's point — a wrong answer doesn't
+  // forfeit the round, it just leaves it open for the opponent. The
+  // conditional UPDATE (only where winner_id is still NULL) is what decides
+  // the race atomically if both players happen to answer correctly at once;
+  // whichever UPDATE actually matches a row is the one that won it.
   let pointsAwarded = 0;
   if (isCorrect) {
-    pointsAwarded = await getSetting("battle_correct_answer", 5);
-    await supabase.from("points_history").insert({ pedagog_data_id: pedagog.id, source: "battle_correct_answer", source_id: roundId, points: pointsAwarded });
+    const { data: won } = await supabase.from("battle_rounds").update({ winner_id: pedagog.id }).eq("id", roundId).is("winner_id", null).select("id");
+    if (won && won.length > 0) {
+      pointsAwarded = await getSetting("battle_correct_answer", 5);
+      await supabase.from("points_history").insert({ pedagog_data_id: pedagog.id, source: "battle_correct_answer", source_id: roundId, points: pointsAwarded });
+    }
   }
 
   return json({ ok: true, correct: isCorrect, correct_option: question?.correct_option, points_awarded: pointsAwarded });
 }
 
 async function finishBattleMatch(matchId: string, match: { player1_id: string; player2_id: string }) {
-  const { data: rounds } = await supabase.from("battle_rounds").select("id").eq("match_id", matchId);
-  const roundIds = (rounds || []).map((r) => r.id);
-
-  const { data: answers } = await supabase.from("battle_answers").select("pedagog_data_id, is_correct, response_ms").in("round_id", roundIds.length ? roundIds : ["00000000-0000-0000-0000-000000000000"]);
-
-  const tally = (pid: string) => {
-    const mine = (answers || []).filter((a) => a.pedagog_data_id === pid);
-    const correct = mine.filter((a) => a.is_correct).length;
-    const totalMs = mine.reduce((sum, a) => sum + a.response_ms, 0);
-    return { correct, totalMs };
-  };
-
-  const p1 = tally(match.player1_id);
-  const p2 = tally(match.player2_id);
+  // The winner is whoever won more rounds (first to answer each one
+  // correctly) — see handleBattleAnswer. A round neither player answered
+  // correctly counts toward nobody. Equal round-wins is a draw.
+  const { data: rounds } = await supabase.from("battle_rounds").select("winner_id").eq("match_id", matchId);
+  const p1Wins = (rounds || []).filter((r) => r.winner_id === match.player1_id).length;
+  const p2Wins = (rounds || []).filter((r) => r.winner_id === match.player2_id).length;
+  const p1 = { correct: p1Wins };
+  const p2 = { correct: p2Wins };
 
   let winnerId: string | null = null;
-  if (p1.correct !== p2.correct) {
-    winnerId = p1.correct > p2.correct ? match.player1_id : match.player2_id;
-  } else if (p1.totalMs !== p2.totalMs) {
-    winnerId = p1.totalMs < p2.totalMs ? match.player1_id : match.player2_id;
+  if (p1Wins !== p2Wins) {
+    winnerId = p1Wins > p2Wins ? match.player1_id : match.player2_id;
   }
 
   await supabase.from("battle_matches").update({ status: "finished", winner_id: winnerId, finished_at: new Date().toISOString() }).eq("id", matchId);

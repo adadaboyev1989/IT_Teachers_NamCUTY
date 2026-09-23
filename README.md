@@ -8,9 +8,11 @@ Namangan shahridagi IT/informatika o'qituvchilari uchun Telegram bot + Mini App 
 
 - **Telegram bot** — foydalanuvchini ro'yxatdan o'tkazadi: telefon raqami + JSHSHIR (PINFL) so'raydi, admin oldindan kiritgan pedagog ma'lumotlari bilan solishtiradi
 - **Mini App** — profil, reyting jadvali, ko'p bosqichli quest (escape room), onlayn o'qituvchilar bilan jonli battle
-- **Admin panel** — pedagoglar (Excel import/eksport), quest bosqichlari/savollari (Excel import), battle savollar banki, reyting ball qiymatlari, topshiriqlar, yutuqlar
+- **Admin panel** — pedagoglar (Excel import/eksport), quest bosqichlari/savollari (Excel import), battle savollar banki (Excel import), reyting ball qiymatlari, topshiriqlar, yutuqlar
 - **Quest savollar banki** — har bir bosqich uchun admin ixtiyoriy sondagi (masalan, 100 tagacha) savol kiritishi mumkin, har biri qiyinlik darajasi bilan (oson/o'rta/qiyin); har bir o'qituvchiga shu bankdan tasodifiy 10 tadan savol (3 oson + 4 o'rta + 3 qiyin) beriladi, Excel orqali ommaviy import qilish imkoni bilan
 - **Quest — 3 jon va 3 soatlik bloklash** — o'qituvchida bosqich boshiga 3 ta jon bor; har bir xato javob bittasini kamaytiradi, 3-xato javobda bosqich 3 soatga bloklanadi (jonli sanoq bilan). Muddat tugagach, o'sha bosqichni qayta ochganda savollar to'liq yangidan tasodifiy tanlanadi
+- **Battle savollar banki** — qiyinlik darajasisiz, Excel orqali ommaviy import qilinadi; bitta o'yinda 11 ta savol tasodifiy tartibda o'ynatiladi
+- **Battle ball berish qoidasi** — har bir savolga kim birinchi bo'lib **to'g'ri** javob bersa, ball o'shanga beriladi (xato javob raundni "yutqazmaydi" — ikkinchi ishtirokchi hali ham to'g'ri javob berib ballni yutib olishi mumkin); eng ko'p raund yutgan ishtirokchi battle g'olibi bo'ladi, teng bo'lsa — durang
 - **Topshiriqlar** — admin panelda yaratiladi, bot orqali e'lon qilinadi, lekin bajarilishi **alohida Telegram guruhda** amalga oshiriladi; admin faqat "bajardi" belgisini qo'yadi, ball avtomatik qo'shiladi
 - **Yutuqlar** — admin panelda alohida bo'lim: olimpiada, viloyat yoki respublika ko'rik-tanlovlaridagi g'oliblik uchun har bir pedagogga individual ball beriladi (tanlov nomi va ball qiymati admin tomonidan erkin kiritiladi)
 - **Tug'ilgan kun tabrigi** — har kuni bir marta tekshirilib (kundalik tashqi trigger orqali, [DEPLOY.md](./DEPLOY.md) ga qarang), shu kuni tug'ilgan kuni bo'lgan, botdan foydalanuvchi o'qituvchilarga avtomatik tabrik xabari yuboriladi
