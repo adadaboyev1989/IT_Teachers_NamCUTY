@@ -1,8 +1,26 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import type { QuestStage, QuestQuestion } from '../types'
-import { Trash2, Edit3, ChevronRight, Clock, ListChecks } from 'lucide-react'
+import type { QuestStage, QuestQuestion, QuestDifficulty } from '../types'
+import { Trash2, Edit3, ChevronRight, Clock, ListChecks, Upload, FileSpreadsheet, Loader2, X } from 'lucide-react'
 import { SectionHeader, LoadingSpinner, EmptyState, Modal, FormField, ErrorBox, FormActions } from './shared'
+
+const difficulties: QuestDifficulty[] = ['oson', 'orta', 'qiyin']
+
+const difficultyLabels: Record<QuestDifficulty, string> = {
+  oson: 'Oson',
+  orta: "O'rta",
+  qiyin: 'Qiyin',
+}
+
+const difficultyColors: Record<QuestDifficulty, string> = {
+  oson: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+  orta: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  qiyin: 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+}
+
+// Fallback default points-by-difficulty if rating_settings somehow doesn't
+// have these keys yet — matches the values the migration seeds them with.
+const DEFAULT_DIFFICULTY_POINTS: Record<QuestDifficulty, number> = { oson: 5, orta: 10, qiyin: 15 }
 
 export function AdminQuest() {
   const [stages, setStages] = useState<QuestStage[]>([])
@@ -130,6 +148,9 @@ function QuestionsPanel({ stage }: { stage: QuestStage }) {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<QuestQuestion | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchQuestions = useCallback(async () => {
     const { data, error } = await supabase.from('quest_questions').select('*').eq('stage_id', stage.id).order('order_index')
@@ -145,15 +166,141 @@ function QuestionsPanel({ stage }: { stage: QuestStage }) {
     fetchQuestions()
   }
 
+  // xlsx is loaded on demand so its ~140KB doesn't ship in the initial admin
+  // panel bundle for admins who never import quest questions.
+  const handleDownloadTemplate = async () => {
+    const XLSX = await import('xlsx')
+    const template = [
+      { Savol: 'HTML nima uchun ishlatiladi?', 'Javob A': 'Sahifa tuzilishi', 'Javob B': 'Uslub berish', 'Javob C': 'Server mantiqi', 'Javob D': "Ma'lumotlar bazasi", "To'g'ri javob": 'A', 'Qiyinlik darajasi': 'oson' },
+      { Savol: 'Rekursiya nima?', 'Javob A': 'Tsikl turi', 'Javob B': "Funksiyaning o'zini o'zi chaqirishi", 'Javob C': "O'zgaruvchi turi", 'Javob D': 'Massiv metodi', "To'g'ri javob": 'B', 'Qiyinlik darajasi': "o'rta" },
+      { Savol: 'Big O notatsiyasida O(log n) nimani anglatadi?', 'Javob A': 'Chiziqli murakkablik', 'Javob B': "Doimiy murakkablik", 'Javob C': 'Logarifmik murakkablik', 'Javob D': 'Kvadratik murakkablik', "To'g'ri javob": 'C', 'Qiyinlik darajasi': 'qiyin' },
+    ]
+    const ws = XLSX.utils.json_to_sheet(template)
+    ws['!cols'] = [{ wch: 40 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 14 }, { wch: 16 }]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Savollar')
+    XLSX.writeFile(wb, 'quest_savollar_namuna.xlsx')
+  }
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setImporting(true)
+    setImportMsg(null)
+
+    try {
+      const XLSX = await import('xlsx')
+      const arrayBuffer = await file.arrayBuffer()
+      const wb = XLSX.read(arrayBuffer, { type: 'array' })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws)
+
+      const { data: settings } = await supabase.from('rating_settings').select('key, points').in('key', ['quest_points_oson', 'quest_points_orta', 'quest_points_qiyin'])
+      const pointsByDifficulty: Record<QuestDifficulty, number> = { ...DEFAULT_DIFFICULTY_POINTS }
+      for (const s of settings || []) {
+        if (s.key === 'quest_points_oson') pointsByDifficulty.oson = s.points
+        if (s.key === 'quest_points_orta') pointsByDifficulty.orta = s.points
+        if (s.key === 'quest_points_qiyin') pointsByDifficulty.qiyin = s.points
+      }
+
+      const getVal = (row: Record<string, unknown>, keys: string[]): string => {
+        for (const k of keys) {
+          for (const key of Object.keys(row)) {
+            if (key.toLowerCase().trim() === k.toLowerCase().trim()) {
+              const v = row[key]
+              if (v === undefined || v === null || v === '') return ''
+              return String(v).trim()
+            }
+          }
+        }
+        return ''
+      }
+
+      let nextOrder = questions.length
+      const questionRows = rows
+        .map((row) => {
+          const question = getVal(row, ['Savol', 'Question'])
+          const options = [
+            getVal(row, ['Javob A', 'Variant A', 'A']),
+            getVal(row, ['Javob B', 'Variant B', 'B']),
+            getVal(row, ['Javob C', 'Variant C', 'C']),
+            getVal(row, ['Javob D', 'Variant D', 'D']),
+          ]
+          const correctLetter = getVal(row, ["To'g'ri javob", "Togri javob", 'Correct answer']).toUpperCase()
+          const correctOption = ['A', 'B', 'C', 'D'].indexOf(correctLetter)
+          const rawDifficulty = getVal(row, ['Qiyinlik darajasi', 'Difficulty']).toLowerCase().replace(/['’‘]/g, '')
+          const difficulty: QuestDifficulty = rawDifficulty === 'oson' ? 'oson' : rawDifficulty === 'qiyin' ? 'qiyin' : 'orta'
+
+          return {
+            stage_id: stage.id,
+            question,
+            options,
+            correct_option: correctOption,
+            points: pointsByDifficulty[difficulty],
+            difficulty,
+            order_index: nextOrder++,
+          }
+        })
+        .filter((r) => r.question && r.options.every((o) => o) && r.correct_option >= 0)
+
+      if (questionRows.length === 0) {
+        setImportMsg("Faylda hech qanday to'g'ri savol topilmadi. Har bir qatorda savol, 4 ta javob va to'g'ri javob (A/B/C/D) to'ldirilganini tekshiring.")
+        setImporting(false)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        return
+      }
+
+      const { error } = await supabase.from('quest_questions').insert(questionRows)
+
+      if (error) {
+        setImportMsg(`Import xatosi: ${error.message}`)
+      } else {
+        setImportMsg(`${questionRows.length} ta savol muvaffaqiyatli import qilindi!`)
+        fetchQuestions()
+      }
+    } catch {
+      setImportMsg("Faylni o'qib bo'lmadi. Excel formatini tekshiring.")
+    }
+
+    setImporting(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const countByDifficulty = difficulties.map((d) => ({ difficulty: d, count: questions.filter((q) => q.difficulty === d).length }))
+
   return (
     <div className="card p-5">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <ListChecks className="h-5 w-5 text-primary-600" />
           <h3 className="font-display text-lg font-bold text-neutral-900">"{stage.title}" savollari</h3>
         </div>
-        <button onClick={() => { setEditing(null); setShowForm(true) }} className="btn-primary">Savol qo'shish</button>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => fileInputRef.current?.click()} disabled={importing} className="btn-ghost">
+            {importing ? (<><Loader2 className="h-4 w-4 animate-spin" /> Import qilinmoqda...</>) : (<><Upload className="h-4 w-4" /> Excel import</>)}
+          </button>
+          <button onClick={handleDownloadTemplate} className="btn-ghost"><FileSpreadsheet className="h-4 w-4" />Namuna jadval</button>
+          <button onClick={() => { setEditing(null); setShowForm(true) }} className="btn-primary">Savol qo'shish</button>
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="hidden" />
+        </div>
       </div>
+
+      {questions.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+          <span>Jami {questions.length} ta savol:</span>
+          {countByDifficulty.map(({ difficulty, count }) => (
+            <span key={difficulty} className={`badge ${difficultyColors[difficulty]}`}>{difficultyLabels[difficulty]}: {count}</span>
+          ))}
+        </div>
+      )}
+
+      {importMsg && (
+        <div className={`mb-4 rounded-lg px-4 py-3 text-sm ${importMsg.includes('xatosi') || importMsg.includes('topilmadi') || importMsg.includes("o'qib") ? 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400'}`}>
+          {importMsg}
+          <button onClick={() => setImportMsg(null)} className="ml-3 text-current opacity-60 hover:opacity-100"><X className="inline h-3.5 w-3.5" /></button>
+        </div>
+      )}
 
       {loading ? (
         <LoadingSpinner />
@@ -165,7 +312,10 @@ function QuestionsPanel({ stage }: { stage: QuestStage }) {
             <div key={q.id} className="rounded-xl border border-neutral-200 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-neutral-900">{idx + 1}. {q.question}</p>
+                  <div className="mb-1 flex items-center gap-2">
+                    <p className="text-sm font-medium text-neutral-900">{idx + 1}. {q.question}</p>
+                    <span className={`badge flex-shrink-0 text-xs ${difficultyColors[q.difficulty]}`}>{difficultyLabels[q.difficulty]}</span>
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {q.options.map((opt, i) => (
                       <span key={i} className={`badge text-xs ${i === q.correct_option ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500'}`}>{opt}</span>
@@ -200,10 +350,20 @@ function QuestionForm({ stageId, question, nextOrder, onClose, onSuccess }: { st
   const [text, setText] = useState(question?.question || '')
   const [options, setOptions] = useState<string[]>(question?.options?.length ? question.options : ['', '', '', ''])
   const [correctOption, setCorrectOption] = useState(question?.correct_option ?? 0)
-  const [points, setPoints] = useState((question?.points ?? 10).toString())
+  const [difficulty, setDifficulty] = useState<QuestDifficulty>(question?.difficulty ?? 'orta')
+  const [points, setPoints] = useState((question?.points ?? DEFAULT_DIFFICULTY_POINTS.orta).toString())
   const [orderIndex, setOrderIndex] = useState((question?.order_index ?? nextOrder).toString())
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Difficulty drives the default point value (admin-editable in Reyting
+  // qoidalari) — picking a difficulty fills in its points; the admin can
+  // still override the number afterward if this question should differ.
+  const handleDifficultyChange = async (d: QuestDifficulty) => {
+    setDifficulty(d)
+    const { data } = await supabase.from('rating_settings').select('points').eq('key', `quest_points_${d}`).maybeSingle()
+    setPoints((data?.points ?? DEFAULT_DIFFICULTY_POINTS[d]).toString())
+  }
 
   const updateOption = (i: number, value: string) => setOptions((prev) => prev.map((o, idx) => (idx === i ? value : o)))
   const addOption = () => setOptions((prev) => [...prev, ''])
@@ -232,6 +392,7 @@ function QuestionForm({ stageId, question, nextOrder, onClose, onSuccess }: { st
       question: text.trim(),
       options: cleanOptions,
       correct_option: correctOption,
+      difficulty,
       points: parseInt(points) || 0,
       order_index: parseInt(orderIndex) || 0,
     }
@@ -262,6 +423,23 @@ function QuestionForm({ stageId, question, nextOrder, onClose, onSuccess }: { st
               </div>
             ))}
             <button type="button" onClick={addOption} className="text-sm font-medium text-primary-600 hover:text-primary-700">+ Variant qo'shish</button>
+          </div>
+        </FormField>
+
+        <FormField label="Qiyinlik darajasi *">
+          <div className="flex gap-2">
+            {difficulties.map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => handleDifficultyChange(d)}
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
+                  difficulty === d ? `border-transparent ${difficultyColors[d]}` : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'
+                }`}
+              >
+                {difficultyLabels[d]}
+              </button>
+            ))}
           </div>
         </FormField>
 

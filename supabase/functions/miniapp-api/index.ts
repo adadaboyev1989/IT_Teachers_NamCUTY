@@ -123,19 +123,81 @@ async function handleQuestStages(pedagog: Pedagog) {
   return json({ ok: true, stages: result });
 }
 
+function pickRandom<T>(arr: T[], n: number): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, n);
+}
+
+// A stage's `quest_questions` is a bank (intended: ~100 rows, tagged by
+// difficulty) — this deals each teacher a personal, randomized 10-question
+// subset (3 oson + 4 orta + 3 qiyin) the first time they open the stage, and
+// remembers it in quest_question_selections so it never reshuffles under
+// them mid-quiz. Falls back to filling from whatever's left if the bank is
+// short in a tier (e.g. still being populated) rather than failing outright.
+async function getOrCreateQuestSelection(pedagogId: string, stageId: string): Promise<string[]> {
+  const { data: existing } = await supabase
+    .from("quest_question_selections")
+    .select("question_id")
+    .eq("pedagog_data_id", pedagogId)
+    .eq("stage_id", stageId)
+    .order("order_index");
+  if (existing && existing.length > 0) return existing.map((s) => s.question_id);
+
+  const { data: pool } = await supabase.from("quest_questions").select("id, difficulty").eq("stage_id", stageId);
+  if (!pool || pool.length === 0) return [];
+
+  const byDifficulty: Record<string, string[]> = { oson: [], orta: [], qiyin: [] };
+  for (const q of pool) (byDifficulty[q.difficulty] ||= []).push(q.id);
+
+  const targetCounts: [string, number][] = [["oson", 3], ["orta", 4], ["qiyin", 3]];
+  let selected: string[] = [];
+  for (const [difficulty, count] of targetCounts) {
+    selected.push(...pickRandom(byDifficulty[difficulty] || [], count));
+  }
+  if (selected.length < 10) {
+    const remaining = pool.map((q) => q.id).filter((id) => !selected.includes(id));
+    selected.push(...pickRandom(remaining, 10 - selected.length));
+  }
+  selected = pickRandom(selected, selected.length); // shuffle final display order too
+
+  const { error: insertError } = await supabase.from("quest_question_selections").insert(
+    selected.map((question_id, i) => ({ pedagog_data_id: pedagogId, stage_id: stageId, question_id, order_index: i }))
+  );
+  if (insertError) {
+    // Another concurrent request (e.g. two tabs both opening the stage for
+    // the first time) already inserted a selection — that one won, so read
+    // it back rather than returning the (different) set we just picked.
+    const { data: raced } = await supabase
+      .from("quest_question_selections")
+      .select("question_id")
+      .eq("pedagog_data_id", pedagogId)
+      .eq("stage_id", stageId)
+      .order("order_index");
+    if (raced && raced.length > 0) return raced.map((s) => s.question_id);
+  }
+  return selected;
+}
+
 async function handleQuestQuestions(pedagog: Pedagog, stageId: unknown) {
   if (typeof stageId !== "string") return json({ ok: false, error: "stage_id required" }, 400);
 
-  const { data: questions } = await supabase
-    .from("quest_questions")
-    .select("id, question, options, points, order_index")
-    .eq("stage_id", stageId)
-    .order("order_index");
+  const selectedIds = await getOrCreateQuestSelection(pedagog.id, stageId);
+  if (selectedIds.length === 0) return json({ ok: true, questions: [] });
+
+  const { data: questions } = await supabase.from("quest_questions").select("id, question, options, points, difficulty").in("id", selectedIds);
+  const byId = new Map((questions || []).map((q) => [q.id, q]));
 
   const { data: answered } = await supabase.from("quest_answers").select("question_id, selected_option, is_correct").eq("pedagog_data_id", pedagog.id);
   const answeredMap = new Map((answered || []).map((a) => [a.question_id, a]));
 
-  const result = (questions || []).map((q) => ({ ...q, answer: answeredMap.get(q.id) || null }));
+  const result = selectedIds
+    .map((id) => byId.get(id))
+    .filter((q): q is NonNullable<typeof q> => !!q)
+    .map((q) => ({ ...q, answer: answeredMap.get(q.id) || null }));
   return json({ ok: true, questions: result });
 }
 
@@ -146,6 +208,12 @@ async function handleQuestAnswer(pedagog: Pedagog, questionId: unknown, selected
 
   const { data: question } = await supabase.from("quest_questions").select("id, stage_id, correct_option, points").eq("id", questionId).maybeSingle();
   if (!question) return json({ ok: false, error: "Savol topilmadi" }, 404);
+
+  // The question bank can hold far more than 10 questions per stage — only
+  // the 10 actually dealt to this teacher (getOrCreateQuestSelection) count
+  // toward their quiz, so reject anything outside that personal selection.
+  const mySelection = await getOrCreateQuestSelection(pedagog.id, question.stage_id);
+  if (!mySelection.includes(questionId)) return json({ ok: false, error: "Bu savol sizga tegishli emas" }, 403);
 
   const isCorrect = selectedOption === question.correct_option;
 
@@ -173,14 +241,14 @@ async function handleQuestAnswer(pedagog: Pedagog, questionId: unknown, selected
     });
   }
 
-  // Has every question in this stage now been answered? If so, mark the
+  // Has every question in THIS TEACHER'S 10-question selection now been
+  // answered? (Not the whole bank — that can hold ~100.) If so, mark the
   // stage complete and award the one-time completion bonus.
-  const { data: allQuestions } = await supabase.from("quest_questions").select("id").eq("stage_id", question.stage_id);
-  const { data: allAnswers } = await supabase.from("quest_answers").select("question_id").eq("pedagog_data_id", pedagog.id).in("question_id", (allQuestions || []).map((q) => q.id));
+  const { data: allAnswers } = await supabase.from("quest_answers").select("question_id").eq("pedagog_data_id", pedagog.id).in("question_id", mySelection);
 
   let stageCompleted = false;
   let bonusAwarded = 0;
-  if ((allQuestions || []).length > 0 && (allAnswers || []).length >= (allQuestions || []).length) {
+  if (mySelection.length > 0 && (allAnswers || []).length >= mySelection.length) {
     const { data: existingProgress } = await supabase.from("quest_progress").select("status").eq("pedagog_data_id", pedagog.id).eq("stage_id", question.stage_id).maybeSingle();
 
     if (existingProgress?.status !== "completed") {
@@ -189,7 +257,7 @@ async function handleQuestAnswer(pedagog: Pedagog, questionId: unknown, selected
         .select("question_id")
         .eq("pedagog_data_id", pedagog.id)
         .eq("is_correct", true)
-        .in("question_id", (allQuestions || []).map((q) => q.id));
+        .in("question_id", mySelection);
 
       const { data: questionsWithPoints } = await supabase.from("quest_questions").select("id, points").in("id", (correctAnswers || []).map((a) => a.question_id));
       const totalScore = (questionsWithPoints || []).reduce((sum, q) => sum + q.points, 0);

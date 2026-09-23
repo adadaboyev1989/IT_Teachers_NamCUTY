@@ -40,6 +40,8 @@ export type QuestStage = {
   created_at: string
 }
 
+export type QuestDifficulty = 'oson' | 'orta' | 'qiyin'
+
 export type QuestQuestion = {
   id: string
   stage_id: string
@@ -47,6 +49,7 @@ export type QuestQuestion = {
   options: string[]
   correct_option: number
   points: number
+  difficulty: QuestDifficulty
   order_index: number
   created_at: string
 }
